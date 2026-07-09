@@ -815,6 +815,11 @@
         </div>
       </div>
 
+      <div id="btn-exportar-wrap" style="margin-bottom:12px;display:none">
+        <button class="btn btn-secundario" onclick="exportarSemana()" style="font-size:13px">
+          📋 Exportar semana para Sesións
+        </button>
+      </div>
       <div class="lenda">
         <div class="lenda-item"><div class="lenda-cor pendente"></div> Pendente</div>
         <div class="lenda-item"><div class="lenda-cor aprobada"></div> Aprobada</div>
@@ -952,13 +957,7 @@
         <div id="resumo-contido"></div>
       </div>
 
-      <div class="csv-box" id="csv-box">
-        <div class="csv-box-titulo">
-          <span>📋 Datos para a folla de Sesións (copiar e pegar)</span>
-          <button class="btn-copiar" id="btn-copiar" onclick="copiarCSV()">Copiar</button>
-        </div>
-        <pre id="csv-contido"></pre>
-      </div>
+
 
       <div class="btns-fila">
         <button class="btn btn-secundario" onclick="limparFormulario()">Limpar</button>
@@ -969,6 +968,30 @@
     </div>
 
   </main>
+</div>
+
+<!-- MODAL EXPORTAR SEMANA -->
+<div class="modal-overlay" id="modal-exportar" onclick="if(event.target===this)this.classList.remove('aberto')">
+  <div class="modal" style="width:700px">
+    <div class="modal-cab">
+      <h3>📋 Exportar semana para folla de Sesións</h3>
+      <button onclick="document.getElementById('modal-exportar').classList.remove('aberto')">✕</button>
+    </div>
+    <div class="modal-corpo">
+      <p style="font-size:13px;color:#555;margin-bottom:16px">
+        Reservas <strong>Aprobadas</strong> de tipo <strong>Formación</strong> da semana seleccionada.
+        Copia e pega directamente na folla de Sesións CFR Vigo.
+      </p>
+      <div id="exportar-aviso" style="display:none;padding:12px;background:#fff3e0;border-radius:6px;color:#e65100;font-size:13px;margin-bottom:12px"></div>
+      <div class="csv-box" style="display:block;margin-top:0">
+        <div class="csv-box-titulo">
+          <span>Datos tabulados</span>
+          <button class="btn-copiar" id="btn-copiar-semana" onclick="copiarSemana()">Copiar</button>
+        </div>
+        <pre id="csv-semana-contido" style="min-height:60px"></pre>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL DETALLE RESERVA -->
@@ -1088,6 +1111,7 @@ function iniciar() {
   const hoxe = new Date();
   const minData = hoxe.toISOString().split('T')[0];
   document.getElementById('res-data').min = minData;
+  document.getElementById('btn-exportar-wrap').style.display = 'block';
 }
 
 function renderRecursos(lista) {
@@ -1368,6 +1392,7 @@ function cambiarVista(v) {
     document.querySelector('.cal-nav button:last-child').setAttribute('onclick','navSemana(1)');
   }
   renderCalendario();
+  document.getElementById('btn-exportar-wrap').style.display = v === 'semana' ? 'block' : 'none';
 }
 
 function navMes(dir) {
@@ -1421,7 +1446,10 @@ function getLunesDeOfset(offset) {
 }
 
 function fmt(d) {
-  return d.toISOString().split('T')[0];
+  const a = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dia = String(d.getDate()).padStart(2,'0');
+  return `${a}-${m}-${dia}`;
 }
 
 function renderSemana(cont) {
@@ -1541,6 +1569,63 @@ function verDetalle(id) {
     ${r.observacions?`<div class="modal-fila"><strong>Observacións</strong><span>${r.observacions}</span></div>`:''}
   `;
   document.getElementById('modal-overlay').classList.add('aberto');
+}
+
+function exportarSemana() {
+  const lun = getLunesDeOfset(semanaOffset);
+  const [a,m,d] = [lun.getFullYear(), String(lun.getMonth()+1).padStart(2,'0'), String(lun.getDate()).padStart(2,'0')];
+
+  // Datas da semana (luns a sábado)
+  const datasSemana = Array.from({length:6}, (_,i) => {
+    const dd = new Date(lun); dd.setDate(lun.getDate()+i);
+    return fmt(dd);
+  });
+
+  // Filtrar reservas aprobadas de formación nesa semana
+  const seleccionadas = reservas.filter(r =>
+    datasSemana.includes(r.data) &&
+    r.estado === 'Aprobada' &&
+    r.tipo === 'Formación'
+  );
+
+  const aviso = document.getElementById('exportar-aviso');
+  if (seleccionadas.length === 0) {
+    aviso.style.display = 'block';
+    aviso.textContent = 'Non hai reservas Aprobadas de tipo Formación nesta semana.';
+    document.getElementById('csv-semana-contido').textContent = '';
+    document.getElementById('modal-exportar').classList.add('aberto');
+    return;
+  }
+  aviso.style.display = 'none';
+
+  // Xerar liñas CSV — unha por cada espazo de cada reserva
+  const meses = ['xaneiro','febreiro','marzo','abril','maio','xuño','xullo','agosto','setembro','outubro','novembro','decembro'];
+  const liñas = [];
+  seleccionadas.forEach(r => {
+    const [ra,rm,rd] = r.data.split('-');
+    const dataFmt = `${rd}/${rm}/${ra}`;
+    const espazos = r.espazos.split(';').map(e => e.trim()).filter(Boolean);
+    espazos.forEach(espazo => {
+      liñas.push(`${dataFmt}	${espazo}	${r.codigo}	${r.titulo}	${r.relator||''}	${r.horaInicio}	${r.horaFin}`);
+    });
+  });
+
+  // Ordenar por data e hora
+  liñas.sort();
+
+  const cabeceira = 'Data	Aula	Código	Título	Relator	HoraInicio	HoraFin';
+  document.getElementById('csv-semana-contido').textContent = cabeceira + '\n' + liñas.join('\n');
+  document.getElementById('modal-exportar').classList.add('aberto');
+}
+
+function copiarSemana() {
+  const texto = document.getElementById('csv-semana-contido').textContent;
+  navigator.clipboard.writeText(texto).then(() => {
+    const btn = document.getElementById('btn-copiar-semana');
+    btn.textContent = '✓ Copiado';
+    btn.classList.add('copiado');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copiado'); }, 2000);
+  });
 }
 
 function pecharmModal(e) {
