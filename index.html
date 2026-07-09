@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="gl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reserva de espazos · CFR Vigo</title>
+<style>
+  /* =====================================================
+     TOKENS
+  ===================================================== */
+  :root {
+    --azul:        #007bc4;
+    --azul-escuro: #005f99;
+    --azul-claro:  #e8f4fc;
+    --verde:       #2e7d32;
+    --verde-claro: #e8f5e9;
+    --amarelo:     #f57c00;
+    --amarelo-claro: #fff3e0;
+    --vermello:    #c62828;
+    --vermello-claro: #ffebee;
+    --gris-bg:     #f4f6f9;
+    --gris-borde:  #dde3ea;
+    --gris-texto:  #555;
+    --branco:      #ffffff;
+    --radio:       8px;
+    --sombra:      0 2px 10px rgba(0,0,0,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--gris-bg);
+    color: #222;
+    min-height: 100vh;
+  }
+
+  /* =====================================================
+     CABECEIRA
+  ===================================================== */
+  header {
+    background: var(--azul);
+    color: white;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  header span {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 28px;
+    background: var(--azul-escuro);
+  }
+  .nav-tab {
+    padding: 10px 18px;
+    color: rgba(255,255,255,0.75);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .nav-tab:hover { color: white; }
+  .nav-tab.activo {
+    color: white;
+    border-bottom-color: white;
+  }
+
+  /* =====================================================
+     CONTIDO PRINCIPAL
+  ===================================================== */
+  main {
+    max-width: 1100px;
+    margin: 28px auto;
+    padding: 0 20px;
+  }
+
+  .panel {
+    display: none;
+  }
+  .panel.activo {
+    display: block;
+  }
+
+  /* =====================================================
+     PANTALLA DE LOGIN
+  ===================================================== */
+  #login-screen {
+    max-width: 420px;
+    margin: 60px auto;
+    background: var(--branco);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    padding: 40px;
+    text-align: center;
+  }
+  #login-screen h2 {
+    color: var(--azul);
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+  #login-screen p {
+    color: var(--gris-texto);
+    font-size: 14px;
+    margin-bottom: 28px;
+  }
+  .login-campo {
+    margin-bottom: 16px;
+    text-align: left;
+  }
+  .login-campo label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #333;
+  }
+  .login-campo input, .login-campo select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+  .login-campo input:focus, .login-campo select:focus {
+    outline: none;
+    border-color: var(--azul);
+  }
+  .erro-login {
+    color: var(--vermello);
+    font-size: 13px;
+    margin-top: 8px;
+    display: none;
+  }
+
+  /* =====================================================
+     FORMULARIO DE RESERVA
+  ===================================================== */
+  .form-card {
+    background: var(--branco);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    padding: 28px;
+    margin-bottom: 24px;
+  }
+  .form-card h3 {
+    color: var(--azul);
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--azul-claro);
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .form-grid.tres {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  .form-grid.un {
+    grid-template-columns: 1fr;
+  }
+  .campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .campo label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+  }
+  .campo input, .campo select, .campo textarea {
+    padding: 9px 13px;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    background: white;
+  }
+  .campo input:focus, .campo select:focus, .campo textarea:focus {
+    outline: none;
+    border-color: var(--azul);
+  }
+  .campo textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  /* Espazos */
+  .espazos-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .espazo-tag {
+    background: var(--azul-claro);
+    color: var(--azul-escuro);
+    border: 1px solid #b3d9ef;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .espazo-tag button {
+    background: none;
+    border: none;
+    color: var(--azul-escuro);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 0;
+  }
+  .btn-engadir-espazo {
+    background: none;
+    border: 1.5px dashed var(--azul);
+    color: var(--azul);
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-engadir-espazo:hover {
+    background: var(--azul-claro);
+  }
+
+  /* Recursos checkboxes */
+  .recursos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .recurso-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .recurso-check:hover {
+    border-color: var(--azul);
+    background: var(--azul-claro);
+  }
+  .recurso-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--azul);
+    cursor: pointer;
+  }
+  .recurso-check.marcado {
+    border-color: var(--azul);
+    background: var(--azul-claro);
+  }
+
+  /* Radio buttons */
+  .radio-grupo {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .radio-opcion {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+  .radio-opcion:hover { border-color: var(--azul); }
+  .radio-opcion input { accent-color: var(--azul); }
+  .radio-opcion.seleccionado {
+    border-color: var(--azul);
+    background: var(--azul-claro);
+    font-weight: 600;
+  }
+
+  /* Resumo */
+  .resumo-box {
+    background: var(--azul-claro);
+    border: 1.5px solid #b3d9ef;
+    border-radius: var(--radio);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .resumo-box h4 {
+    color: var(--azul-escuro);
+    font-size: 14px;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+  .resumo-fila {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .resumo-fila strong {
+    color: #333;
+    min-width: 140px;
+  }
+  .resumo-fila span { color: #444; }
+
+  /* =====================================================
+     BOTÓNS
+  ===================================================== */
+  .btn {
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primario {
+    background: var(--azul);
+    color: white;
+  }
+  .btn-primario:hover { background: var(--azul-escuro); }
+  .btn-secundario {
+    background: white;
+    color: var(--azul);
+    border: 1.5px solid var(--azul);
+  }
+  .btn-secundario:hover { background: var(--azul-claro); }
+  .btn-exito {
+    background: var(--verde);
+    color: white;
+  }
+  .btn-exito:hover { background: #1b5e20; }
+  .btns-fila {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+
+  /* =====================================================
+     ALERTA DE ÉXITO
+  ===================================================== */
+  .alerta {
+    padding: 16px 20px;
+    border-radius: var(--radio);
+    margin-bottom: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    display: none;
+  }
+  .alerta-exito {
+    background: var(--verde-claro);
+    color: var(--verde);
+    border: 1.5px solid #a5d6a7;
+  }
+  .alerta-erro {
+    background: var(--vermello-claro);
+    color: var(--vermello);
+    border: 1.5px solid #ef9a9a;
+  }
+
+  /* =====================================================
+     CALENDARIO
+  ===================================================== */
+  .cal-controis {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .cal-vistas {
+    display: flex;
+    gap: 4px;
+    background: white;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 6px;
+    padding: 3px;
+  }
+  .cal-vista-btn {
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gris-texto);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cal-vista-btn.activo {
+    background: var(--azul);
+    color: white;
+  }
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cal-nav button {
+    background: white;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .cal-nav button:hover { border-color: var(--azul); color: var(--azul); }
+  .cal-nav span {
+    font-size: 15px;
+    font-weight: 700;
+    color: #333;
+    min-width: 180px;
+    text-align: center;
+  }
+
+  /* Vista semana */
+  .semana-grid {
+    background: white;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    overflow: hidden;
+  }
+  .semana-cabeceira {
+    display: grid;
+    grid-template-columns: 80px repeat(5, 1fr);
+    background: var(--azul);
+    color: white;
+  }
+  .semana-cab-cel {
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    border-right: 1px solid rgba(255,255,255,0.15);
+  }
+  .semana-corpo {
+    display: grid;
+    grid-template-columns: 80px repeat(5, 1fr);
+  }
+  .semana-turno-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    background: var(--gris-bg);
+    border-bottom: 1px solid var(--gris-borde);
+    border-right: 1px solid var(--gris-borde);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gris-texto);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .semana-cel {
+    border-bottom: 1px solid var(--gris-borde);
+    border-right: 1px solid var(--gris-borde);
+    padding: 6px;
+    min-height: 80px;
+    vertical-align: top;
+  }
+
+  /* Vista multi-mes */
+  .multi-mes-grid {
+    display: grid;
+    gap: 20px;
+  }
+  .multi-mes-grid.catro { grid-template-columns: repeat(2, 1fr); }
+  .multi-mes-grid.tres { grid-template-columns: repeat(3, 1fr); }
+
+  .mes-card {
+    background: white;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    overflow: hidden;
+  }
+  .mes-titulo {
+    background: var(--azul);
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+  .mes-dias-cab {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--azul-claro);
+  }
+  .mes-dia-cab {
+    text-align: center;
+    padding: 6px 2px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--azul-escuro);
+  }
+  .mes-dias {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+  .mes-dia {
+    min-height: 52px;
+    border: 0.5px solid var(--gris-borde);
+    padding: 3px;
+    font-size: 11px;
+    vertical-align: top;
+    cursor: default;
+  }
+  .mes-dia.outro-mes { background: #f9f9f9; }
+  .mes-dia.hoxe { background: #fffde7; }
+  .mes-dia-num {
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 2px;
+  }
+  .mes-dia.hoxe .mes-dia-num { color: var(--azul); }
+
+  /* Eventos no calendario */
+  .evento {
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    cursor: pointer;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.15s;
+  }
+  .evento:hover { opacity: 0.8; }
+  .evento.pendente { background: #ffe0b2; color: #e65100; }
+  .evento.aprobada { background: #c8e6c9; color: #1b5e20; }
+  .evento.rexeitada { background: #ffcdd2; color: #b71c1c; }
+
+  .evento-semana {
+    border-radius: 4px;
+    padding: 4px 7px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    cursor: pointer;
+    line-height: 1.4;
+    transition: opacity 0.15s;
+  }
+  .evento-semana:hover { opacity: 0.8; }
+  .evento-semana.pendente { background: #ffe0b2; color: #e65100; border-left: 3px solid #f57c00; }
+  .evento-semana.aprobada { background: #c8e6c9; color: #1b5e20; border-left: 3px solid #2e7d32; }
+  .evento-semana.rexeitada { background: #ffcdd2; color: #b71c1c; border-left: 3px solid #c62828; }
+
+  /* Lenda */
+  .lenda {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .lenda-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #555;
+  }
+  .lenda-cor {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+  }
+  .lenda-cor.pendente { background: #ffe0b2; border: 1px solid #f57c00; }
+  .lenda-cor.aprobada { background: #c8e6c9; border: 1px solid #2e7d32; }
+  .lenda-cor.rexeitada { background: #ffcdd2; border: 1px solid #c62828; }
+
+  /* Modal detalle */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  .modal-overlay.aberto { display: flex; }
+  .modal {
+    background: white;
+    border-radius: var(--radio);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    width: 480px;
+    max-width: 95vw;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal-cab {
+    background: var(--azul);
+    color: white;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: var(--radio) var(--radio) 0 0;
+  }
+  .modal-cab h3 { font-size: 15px; font-weight: 700; }
+  .modal-cab button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0.8;
+  }
+  .modal-cab button:hover { opacity: 1; }
+  .modal-corpo { padding: 20px; }
+  .modal-fila {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--gris-borde);
+    padding-bottom: 10px;
+  }
+  .modal-fila:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .modal-fila strong { color: #333; min-width: 130px; }
+  .modal-fila span { color: #444; }
+  .estado-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .estado-badge.pendente { background: #ffe0b2; color: #e65100; }
+  .estado-badge.aprobada { background: #c8e6c9; color: #1b5e20; }
+  .estado-badge.rexeitada { background: #ffcdd2; color: #b71c1c; }
+
+  /* Filtros calendario */
+  .cal-filtros {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .cal-filtros label { font-size: 13px; font-weight: 600; color: #333; }
+  .cal-filtros select {
+    padding: 6px 10px;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 6px;
+    font-size: 13px;
+    background: white;
+  }
+
+  /* Aviso sen datos */
+  .sen-datos {
+    text-align: center;
+    padding: 48px 24px;
+    color: #aaa;
+    font-size: 15px;
+    background: white;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+  }
+
+  @media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid.tres { grid-template-columns: 1fr; }
+    .multi-mes-grid.catro { grid-template-columns: 1fr; }
+    .multi-mes-grid.tres { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <h2>Reserva de espazos</h2>
+  <p>CFR de Vigo · Acceso restrinxido ao persoal do centro</p>
+  <div class="login-campo">
+    <label>Código PIN</label>
+    <input type="password" id="login-pin" placeholder="Introduce o PIN" autocomplete="off">
+  </div>
+  <div class="login-campo">
+    <label>As túas iniciais (ex: AMG)</label>
+    <input type="text" id="login-asesora" placeholder="3 letras maiúsculas" maxlength="3" style="text-transform:uppercase">
+  </div>
+  <p class="erro-login" id="login-erro">PIN ou iniciais incorrectos</p>
+  <div style="margin-top:20px">
+    <button class="btn btn-primario" style="width:100%" onclick="fazerLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP PRINCIPAL -->
+<div id="app" style="display:none">
+
+  <header>
+    <h1>Reserva de espazos · CFR de Vigo</h1>
+    <span id="header-usuario"></span>
+  </header>
+
+  <nav class="nav-tabs">
+    <button class="nav-tab activo" onclick="mostrarPanel('calendario')">📅 Calendario</button>
+    <button class="nav-tab" onclick="mostrarPanel('nova-reserva')">➕ Nova reserva</button>
+  </nav>
+
+  <main>
+
+    <!-- ALERTA GLOBAL -->
+    <div class="alerta alerta-exito" id="alerta-exito">✓ Reserva enviada correctamente. Quedará pendente de aprobación.</div>
+    <div class="alerta alerta-erro" id="alerta-erro">✗ Erro ao enviar a reserva. Inténtao de novo.</div>
+
+    <!-- ================================================
+         PANEL CALENDARIO
+    ================================================ -->
+    <div id="panel-calendario" class="panel activo">
+
+      <div class="cal-controis">
+        <div class="cal-vistas">
+          <button class="cal-vista-btn activo" onclick="cambiarVista('semana')">Semana</button>
+          <button class="cal-vista-btn" onclick="cambiarVista('cuat1')">Set–Dec</button>
+          <button class="cal-vista-btn" onclick="cambiarVista('trim2')">Xan–Mar</button>
+          <button class="cal-vista-btn" onclick="cambiarVista('trim3')">Abr–Xuñ</button>
+        </div>
+        <div class="cal-nav" id="cal-nav">
+          <button onclick="navSemana(-1)">‹</button>
+          <span id="cal-label">Semana actual</span>
+          <button onclick="navSemana(1)">›</button>
+        </div>
+        <div class="cal-filtros">
+          <label>Filtrar:</label>
+          <select id="filtro-espazo" onchange="renderCalendario()">
+            <option value="">Todos os espazos</option>
+          </select>
+          <select id="filtro-estado" onchange="renderCalendario()">
+            <option value="">Todos os estados</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Aprobada">Aprobada</option>
+            <option value="Rexeitada">Rexeitada</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="lenda">
+        <div class="lenda-item"><div class="lenda-cor pendente"></div> Pendente</div>
+        <div class="lenda-item"><div class="lenda-cor aprobada"></div> Aprobada</div>
+        <div class="lenda-item"><div class="lenda-cor rexeitada"></div> Rexeitada</div>
+      </div>
+
+      <div id="cal-contido"></div>
+    </div>
+
+    <!-- ================================================
+         PANEL NOVA RESERVA
+    ================================================ -->
+    <div id="panel-nova-reserva" class="panel">
+
+      <!-- Paso 1: Data e turno -->
+      <div class="form-card">
+        <h3>1. Data e horario</h3>
+        <div class="form-grid tres">
+          <div class="campo">
+            <label>Data *</label>
+            <input type="date" id="res-data">
+          </div>
+          <div class="campo">
+            <label>Turno *</label>
+            <select id="res-turno">
+              <option value="">Selecciona...</option>
+              <option value="Mañá">Mañá</option>
+              <option value="Tarde">Tarde</option>
+            </select>
+          </div>
+          <div class="campo"></div>
+        </div>
+        <div class="form-grid tres" style="margin-top:14px">
+          <div class="campo">
+            <label>Hora de inicio *</label>
+            <input type="time" id="res-hora-inicio">
+          </div>
+          <div class="campo">
+            <label>Hora de fin *</label>
+            <input type="time" id="res-hora-fin">
+          </div>
+          <div class="campo">
+            <label>Pausa-café</label>
+            <div class="radio-grupo" style="margin-top:4px">
+              <label class="radio-opcion" id="lbl-cafe-non">
+                <input type="radio" name="cafe" value="Non" checked onchange="actualizarRadios()"> Non
+              </label>
+              <label class="radio-opcion" id="lbl-cafe-si">
+                <input type="radio" name="cafe" value="Si" onchange="actualizarRadios()"> Si
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 2: Accesibilidade e espazos -->
+      <div class="form-card">
+        <h3>2. Espazos</h3>
+        <div class="campo" style="margin-bottom:16px">
+          <label>Hai persoas asistentes con mobilidade reducida?</label>
+          <div class="radio-grupo" style="margin-top:4px">
+            <label class="radio-opcion" id="lbl-mob-non">
+              <input type="radio" name="mobilidade" value="Non" checked onchange="actualizarEspazosDisponibles()"> Non
+            </label>
+            <label class="radio-opcion" id="lbl-mob-si">
+              <input type="radio" name="mobilidade" value="Si" onchange="actualizarEspazosDisponibles()"> Si (só planta baixa)
+            </label>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Espazos solicitados *</label>
+          <div class="espazos-lista" id="espazos-seleccionados"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <select id="espazo-selector" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:6px;font-size:14px;background:white">
+              <option value="">Selecciona un espazo...</option>
+            </select>
+            <button class="btn-engadir-espazo" onclick="engadirEspazo()">+ Engadir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 3: Actividade -->
+      <div class="form-card">
+        <h3>3. Tipo de actividade</h3>
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="campo">
+            <label>Tipo *</label>
+            <select id="res-tipo" onchange="actualizarTipoActividade()">
+              <option value="">Selecciona...</option>
+              <option value="Formación">Formación (con código)</option>
+              <option value="Reunión interna">Reunión interna</option>
+              <option value="Videoconferencia">Videoconferencia</option>
+              <option value="Docencia compartida PFPP">Docencia compartida PFPP</option>
+              <option value="Docencia compartida AFC">Docencia compartida AFC</option>
+            </select>
+          </div>
+        </div>
+        <div id="campos-formacion" style="display:none">
+          <div class="form-grid">
+            <div class="campo">
+              <label>Código da actividade</label>
+              <input type="text" id="res-codigo" placeholder="Ex: V2501027">
+            </div>
+            <div class="campo">
+              <label>Título da actividade</label>
+              <input type="text" id="res-titulo" placeholder="Título completo">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 4: Recursos -->
+      <div class="form-card">
+        <h3>4. Recursos necesarios</h3>
+        <div class="recursos-grid" id="recursos-lista"></div>
+      </div>
+
+      <!-- Paso 5: Observacións e envío -->
+      <div class="form-card">
+        <h3>5. Observacións</h3>
+        <div class="campo">
+          <textarea id="res-observacions" placeholder="Calquera información adicional relevante..."></textarea>
+        </div>
+      </div>
+
+      <!-- Resumo -->
+      <div class="resumo-box" id="resumo-box" style="display:none">
+        <h4>Resumo da solicitude</h4>
+        <div id="resumo-contido"></div>
+      </div>
+
+      <div class="btns-fila">
+        <button class="btn btn-secundario" onclick="limparFormulario()">Limpar</button>
+        <button class="btn btn-primario" onclick="previsualizar()">Previsualizar</button>
+        <button class="btn btn-exito" id="btn-enviar" style="display:none" onclick="enviarReserva()">Confirmar e enviar</button>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL DETALLE RESERVA -->
+<div class="modal-overlay" id="modal-overlay" onclick="pecharmModal(event)">
+  <div class="modal">
+    <div class="modal-cab">
+      <h3>Detalle da reserva</h3>
+      <button onclick="document.getElementById('modal-overlay').classList.remove('aberto')">✕</button>
+    </div>
+    <div class="modal-corpo" id="modal-corpo"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN — EDITAR AQUÍ
+// ============================================================
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyy4O0ohgbt9qwk33lvsrUpDVn1cPkivEMuhxfccDG7vfG7DdebPUBgE2_xi9PSU9k6eQ/exec';
+const PIN_CORRECTO = 'CFR2026'; // Cambiar por PIN real
+
+const ESPAZOS_TODOS = [
+  { nome: 'Aula 0',        andar: 'Planta baixa', accesible: true  },
+  { nome: 'Salón de actos',andar: 'Planta baixa', accesible: true  },
+  { nome: 'Polo A',        andar: 'Planta baixa', accesible: true  },
+  { nome: 'Polo B',        andar: 'Planta baixa', accesible: true  },
+  { nome: 'Aula 1',        andar: '1º andar',     accesible: false },
+  { nome: 'Aula 2',        andar: '1º andar',     accesible: false },
+  { nome: 'Aula 3',        andar: '1º andar',     accesible: false },
+  { nome: 'Aula 4',        andar: '1º andar',     accesible: false },
+  { nome: 'Aula 5',        andar: '1º andar',     accesible: false },
+  { nome: 'Aula 6',        andar: '1º andar',     accesible: false },
+  { nome: 'Aula 7',        andar: '2º andar',     accesible: false },
+  { nome: 'Aula 8',        andar: '2º andar',     accesible: false },
+];
+
+const RECURSOS = [
+  'Carro 1 (21 portátiles)',
+  'Carro 2 (21 portátiles)',
+  'Carro 3 (30 portátiles)',
+  'Kit audiovisual (Radio)',
+  'Kit audiovisual (Vídeo)',
+];
+
+// ============================================================
+// ESTADO
+// ============================================================
+let usuarioActual = '';
+let espazosSeleccionados = [];
+let vistaActual = 'semana';
+let semanaOffset = 0;
+let reservas = [];
+
+// ============================================================
+// LOGIN
+// ============================================================
+function fazerLogin() {
+  const pin = document.getElementById('login-pin').value;
+  const ases = document.getElementById('login-asesora').value.toUpperCase().trim();
+  const erro = document.getElementById('login-erro');
+
+  if (pin !== PIN_CORRECTO || ases.length !== 3) {
+    erro.style.display = 'block';
+    return;
+  }
+  erro.style.display = 'none';
+  usuarioActual = ases;
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('header-usuario').textContent = `Conectado/a como: ${ases}`;
+  iniciar();
+}
+
+document.getElementById('login-pin').addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
+document.getElementById('login-asesora').addEventListener('keydown', e => { if (e.key === 'Enter') fazerLogin(); });
+
+// ============================================================
+// INICIO
+// ============================================================
+function iniciar() {
+  renderRecursos();
+  actualizarEspazosDisponibles();
+  popularFiltroEspazo();
+  cargarReservas();
+
+  // Data mínima hoxe
+  const hoxe = new Date();
+  const minData = hoxe.toISOString().split('T')[0];
+  document.getElementById('res-data').min = minData;
+}
+
+function renderRecursos() {
+  const cont = document.getElementById('recursos-lista');
+  cont.innerHTML = RECURSOS.map(r => `
+    <label class="recurso-check" onclick="this.classList.toggle('marcado')">
+      <input type="checkbox" value="${r}"> ${r}
+    </label>`).join('');
+}
+
+function actualizarEspazosDisponibles() {
+  const mobSi = document.querySelector('input[name="mobilidade"]:checked')?.value === 'Si';
+  const sel = document.getElementById('espazo-selector');
+  const disps = mobSi ? ESPAZOS_TODOS.filter(e => e.accesible) : ESPAZOS_TODOS;
+  sel.innerHTML = '<option value="">Selecciona un espazo...</option>' +
+    disps.map(e => `<option value="${e.nome}">${e.nome} — ${e.andar}</option>`).join('');
+  actualizarRadios();
+}
+
+function popularFiltroEspazo() {
+  const sel = document.getElementById('filtro-espazo');
+  sel.innerHTML = '<option value="">Todos os espazos</option>' +
+    ESPAZOS_TODOS.map(e => `<option value="${e.nome}">${e.nome}</option>`).join('');
+}
+
+function actualizarRadios() {
+  // Café
+  const cafeVal = document.querySelector('input[name="cafe"]:checked')?.value;
+  document.getElementById('lbl-cafe-si').classList.toggle('seleccionado', cafeVal === 'Si');
+  document.getElementById('lbl-cafe-non').classList.toggle('seleccionado', cafeVal === 'Non');
+  // Mobilidade
+  const mobVal = document.querySelector('input[name="mobilidade"]:checked')?.value;
+  document.getElementById('lbl-mob-si').classList.toggle('seleccionado', mobVal === 'Si');
+  document.getElementById('lbl-mob-non').classList.toggle('seleccionado', mobVal === 'Non');
+}
+
+function actualizarTipoActividade() {
+  const tipo = document.getElementById('res-tipo').value;
+  document.getElementById('campos-formacion').style.display = tipo === 'Formación' ? 'block' : 'none';
+}
+
+// ============================================================
+// XESTIÓN DE ESPAZOS
+// ============================================================
+function engadirEspazo() {
+  const sel = document.getElementById('espazo-selector');
+  const val = sel.value;
+  if (!val) return;
+  if (espazosSeleccionados.includes(val)) return;
+  espazosSeleccionados.push(val);
+  renderEspazosSeleccionados();
+  sel.value = '';
+}
+
+function quitarEspazo(nome) {
+  espazosSeleccionados = espazosSeleccionados.filter(e => e !== nome);
+  renderEspazosSeleccionados();
+}
+
+function renderEspazosSeleccionados() {
+  const cont = document.getElementById('espazos-seleccionados');
+  cont.innerHTML = espazosSeleccionados.map(e =>
+    `<div class="espazo-tag">${e}<button onclick="quitarEspazo('${e}')">×</button></div>`
+  ).join('');
+}
+
+// ============================================================
+// PREVISUALIZACIÓN E ENVÍO
+// ============================================================
+function previsualizar() {
+  const data = document.getElementById('res-data').value;
+  const turno = document.getElementById('res-turno').value;
+  const horaIni = document.getElementById('res-hora-inicio').value;
+  const horaFin = document.getElementById('res-hora-fin').value;
+  const tipo = document.getElementById('res-tipo').value;
+  const cafe = document.querySelector('input[name="cafe"]:checked')?.value;
+  const mob = document.querySelector('input[name="mobilidade"]:checked')?.value;
+
+  if (!data || !turno || !horaIni || !horaFin || !tipo || espazosSeleccionados.length === 0) {
+    alert('Por favor, enche todos os campos obrigatorios (*).');
+    return;
+  }
+
+  const recursos = [...document.querySelectorAll('#recursos-lista input:checked')].map(i => i.value);
+  const codigo = document.getElementById('res-codigo').value;
+  const titulo = document.getElementById('res-titulo').value;
+  const obs = document.getElementById('res-observacions').value;
+
+  const resumo = document.getElementById('resumo-contido');
+  const [a,m,d] = data.split('-');
+  resumo.innerHTML = `
+    <div class="resumo-fila"><strong>Persoa:</strong><span>${usuarioActual}</span></div>
+    <div class="resumo-fila"><strong>Data:</strong><span>${d}/${m}/${a}</span></div>
+    <div class="resumo-fila"><strong>Turno:</strong><span>${turno} (${horaIni} – ${horaFin})</span></div>
+    <div class="resumo-fila"><strong>Pausa-café:</strong><span>${cafe}</span></div>
+    <div class="resumo-fila"><strong>Mobilidade reducida:</strong><span>${mob}</span></div>
+    <div class="resumo-fila"><strong>Espazos:</strong><span>${espazosSeleccionados.join(', ')}</span></div>
+    <div class="resumo-fila"><strong>Tipo:</strong><span>${tipo}${codigo ? ' · ' + codigo : ''}${titulo ? ' — ' + titulo : ''}</span></div>
+    ${recursos.length ? `<div class="resumo-fila"><strong>Recursos:</strong><span>${recursos.join(', ')}</span></div>` : ''}
+    ${obs ? `<div class="resumo-fila"><strong>Observacións:</strong><span>${obs}</span></div>` : ''}
+  `;
+  document.getElementById('resumo-box').style.display = 'block';
+  document.getElementById('btn-enviar').style.display = 'inline-block';
+  document.getElementById('resumo-box').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function enviarReserva() {
+  const data = document.getElementById('res-data').value;
+  const turno = document.getElementById('res-turno').value;
+  const horaIni = document.getElementById('res-hora-inicio').value;
+  const horaFin = document.getElementById('res-hora-fin').value;
+  const tipo = document.getElementById('res-tipo').value;
+  const cafe = document.querySelector('input[name="cafe"]:checked')?.value;
+  const mob = document.querySelector('input[name="mobilidade"]:checked')?.value;
+  const recursos = [...document.querySelectorAll('#recursos-lista input:checked')].map(i => i.value);
+  const codigo = document.getElementById('res-codigo').value;
+  const titulo = document.getElementById('res-titulo').value;
+  const obs = document.getElementById('res-observacions').value;
+
+  const payload = {
+    asesora: usuarioActual,
+    data, turno, horaInicio: horaIni, horaFin,
+    espazos: espazosSeleccionados.join('; '),
+    tipo, codigo, titulo,
+    recursos: recursos.join('; '),
+    cafe, mobilidade: mob,
+    observacions: obs,
+    estado: 'Pendente',
+    timestamp: new Date().toISOString(),
+  };
+
+  // Engadir localmente para visualización inmediata
+  reservas.push({ ...payload, id: Date.now() });
+  renderCalendario();
+
+  // Enviar ao Apps Script (se está configurado)
+  if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch(e) { console.error('Erro ao enviar:', e); }
+  }
+
+  mostrarAlerta('exito');
+  limparFormulario();
+  mostrarPanel('calendario');
+}
+
+function limparFormulario() {
+  document.getElementById('res-data').value = '';
+  document.getElementById('res-turno').value = '';
+  document.getElementById('res-hora-inicio').value = '';
+  document.getElementById('res-hora-fin').value = '';
+  document.getElementById('res-tipo').value = '';
+  document.getElementById('res-codigo').value = '';
+  document.getElementById('res-titulo').value = '';
+  document.getElementById('res-observacions').value = '';
+  document.querySelectorAll('input[name="cafe"]')[0].checked = true;
+  document.querySelectorAll('input[name="mobilidade"]')[0].checked = true;
+  document.querySelectorAll('#recursos-lista input').forEach(i => {
+    i.checked = false;
+    i.closest('.recurso-check')?.classList.remove('marcado');
+  });
+  espazosSeleccionados = [];
+  renderEspazosSeleccionados();
+  actualizarEspazosDisponibles();
+  actualizarTipoActividade();
+  actualizarRadios();
+  document.getElementById('resumo-box').style.display = 'none';
+  document.getElementById('btn-enviar').style.display = 'none';
+}
+
+// ============================================================
+// CARGA DE RESERVAS (DEMO + APPS SCRIPT)
+// ============================================================
+async function cargarReservas() {
+  // Datos de demo
+  const hoxe = new Date();
+  const fmt = d => d.toISOString().split('T')[0];
+  const d1 = new Date(hoxe); d1.setDate(hoxe.getDate() + 1);
+  const d2 = new Date(hoxe); d2.setDate(hoxe.getDate() + 3);
+  const d3 = new Date(hoxe); d3.setDate(hoxe.getDate() + 5);
+  reservas = [
+    { id:1, asesora:'AMG', data:fmt(hoxe), turno:'Tarde', horaInicio:'16:00', horaFin:'20:00', espazos:'Aula 1; Aula 2', tipo:'Formación', codigo:'V2501027', titulo:'Programar por ámbitos', recursos:'Carro 1 (21 portátiles)', cafe:'Si', mobilidade:'Non', observacions:'', estado:'Aprobada' },
+    { id:2, asesora:'RGP', data:fmt(d1), turno:'Mañá', horaInicio:'09:00', horaFin:'14:00', espazos:'Salón de actos', tipo:'Reunión interna', codigo:'', titulo:'', recursos:'', cafe:'Non', mobilidade:'Non', observacions:'Reunión de coordinación', estado:'Pendente' },
+    { id:3, asesora:'XFR', data:fmt(d2), turno:'Tarde', horaInicio:'16:30', horaFin:'20:30', espazos:'Aula 3', tipo:'Formación', codigo:'V2501010', titulo:'Realidade Virtual', recursos:'Kit audiovisual (Vídeo)', cafe:'Si', mobilidade:'Non', observacions:'', estado:'Pendente' },
+    { id:4, asesora:'AMG', data:fmt(d3), turno:'Mañá', horaInicio:'09:00', horaFin:'14:00', espazos:'Polo A', tipo:'Docencia compartida PFPP', codigo:'', titulo:'', recursos:'', cafe:'Non', mobilidade:'Si', observacions:'', estado:'Rexeitada' },
+  ];
+  renderCalendario();
+}
+
+// ============================================================
+// CALENDARIOS
+// ============================================================
+function cambiarVista(v) {
+  vistaActual = v;
+  document.querySelectorAll('.cal-vista-btn').forEach((b,i) => {
+    b.classList.toggle('activo', ['semana','cuat1','trim2','trim3'][i] === v);
+  });
+  const nav = document.getElementById('cal-nav');
+  nav.style.display = v === 'semana' ? 'flex' : 'none';
+  renderCalendario();
+}
+
+function navSemana(dir) {
+  semanaOffset += dir;
+  renderCalendario();
+}
+
+function renderCalendario() {
+  const cont = document.getElementById('cal-contido');
+  if (vistaActual === 'semana') renderSemana(cont);
+  else renderMultiMes(cont);
+}
+
+function filtrarReservas(lista) {
+  const esp = document.getElementById('filtro-espazo').value;
+  const est = document.getElementById('filtro-estado').value;
+  return lista.filter(r => {
+    if (esp && !r.espazos.includes(esp)) return false;
+    if (est && r.estado !== est) return false;
+    return true;
+  });
+}
+
+const DIAS_CURTOS = ['Dom','Lun','Mar','Mér','Xov','Ven','Sáb'];
+const MESES = ['Xaneiro','Febreiro','Marzo','Abril','Maio','Xuño','Xullo','Agosto','Setembro','Outubro','Novembro','Decembro'];
+
+function getLunesDeOfset(offset) {
+  const hoxe = new Date();
+  const dia = hoxe.getDay();
+  const difLun = dia === 0 ? -6 : 1 - dia;
+  const lun = new Date(hoxe);
+  lun.setDate(hoxe.getDate() + difLun + offset * 7);
+  lun.setHours(0,0,0,0);
+  return lun;
+}
+
+function fmt(d) {
+  return d.toISOString().split('T')[0];
+}
+
+function renderSemana(cont) {
+  const lun = getLunesDeOfset(semanaOffset);
+  const ven = new Date(lun); ven.setDate(lun.getDate() + 4);
+  const label = `${lun.getDate()} ${MESES[lun.getMonth()].substring(0,3)} – ${ven.getDate()} ${MESES[ven.getMonth()].substring(0,3)} ${ven.getFullYear()}`;
+  document.getElementById('cal-label').textContent = label;
+
+  const dias = Array.from({length:5}, (_,i) => {
+    const d = new Date(lun); d.setDate(lun.getDate() + i); return d;
+  });
+
+  const rFiltradas = filtrarReservas(reservas);
+
+  let html = `<div class="semana-grid">
+    <div class="semana-cabeceira">
+      <div class="semana-cab-cel">Turno</div>
+      ${dias.map(d => {
+        const esHoxe = fmt(d) === fmt(new Date());
+        return `<div class="semana-cab-cel" style="${esHoxe?'background:rgba(255,255,255,0.2)':''}">${DIAS_CURTOS[d.getDay()]} ${d.getDate()}</div>`;
+      }).join('')}
+    </div>
+    <div class="semana-corpo">`;
+
+  ['Mañá','Tarde'].forEach(turno => {
+    html += `<div class="semana-turno-label">${turno}</div>`;
+    dias.forEach(d => {
+      const fmtD = fmt(d);
+      const evs = rFiltradas.filter(r => r.data === fmtD && r.turno === turno);
+      html += `<div class="semana-cel">${evs.map(r =>
+        `<div class="evento-semana ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})'>
+          <div>${r.espazos.split(';')[0].trim()}</div>
+          <div style="font-weight:400;font-size:11px">${r.horaInicio}–${r.horaFin} · ${r.asesora}</div>
+        </div>`
+      ).join('')}</div>`;
+    });
+  });
+
+  html += `</div></div>`;
+  cont.innerHTML = html;
+}
+
+function renderMultiMes(cont) {
+  const anoPeriodos = {
+    cuat1: [8,9,10,11],
+    trim2: [0,1,2],
+    trim3: [3,4,5],
+  };
+  const mesesIdxs = anoPeriodos[vistaActual];
+  const anoActual = new Date().getFullYear();
+  const ano = vistaActual === 'cuat1' ? anoActual : (new Date().getMonth() < 6 ? anoActual : anoActual + 1);
+
+  const ncols = mesesIdxs.length === 4 ? 'catro' : 'tres';
+  const rFiltradas = filtrarReservas(reservas);
+
+  let html = `<div class="multi-mes-grid ${ncols}">`;
+  mesesIdxs.forEach(mesIdx => {
+    const anoMes = (vistaActual === 'trim2' || vistaActual === 'trim3') && mesIdx < 8 ? anoActual + 1 : anoActual;
+    html += renderMes(mesIdx, anoMes, rFiltradas);
+  });
+  html += `</div>`;
+  cont.innerHTML = html;
+}
+
+function renderMes(mesIdx, ano, rFiltradas) {
+  const pri = new Date(ano, mesIdx, 1);
+  const ult = new Date(ano, mesIdx + 1, 0);
+  const inicioGrid = new Date(pri);
+  const diaIni = pri.getDay() === 0 ? 6 : pri.getDay() - 1;
+  inicioGrid.setDate(1 - diaIni);
+
+  let celas = '';
+  const cur = new Date(inicioGrid);
+  for (let i = 0; i < 42; i++) {
+    const fmtD = fmt(cur);
+    const outroMes = cur.getMonth() !== mesIdx;
+    const esHoxe = fmtD === fmt(new Date());
+    const evs = rFiltradas.filter(r => r.data === fmtD);
+    const cls = `mes-dia${outroMes?' outro-mes':''}${esHoxe?' hoxe':''}`;
+    celas += `<div class="${cls}">
+      <div class="mes-dia-num">${cur.getDate()}</div>
+      ${evs.map(r => `<div class="evento ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})' title="${r.espazos} · ${r.asesora}">
+        ${r.espazos.split(';')[0].trim().replace('Aula ','A').replace('Salón de actos','Salón').replace('Polo ','P')}
+      </div>`).join('')}
+    </div>`;
+    cur.setDate(cur.getDate() + 1);
+    if (i >= 34 && cur.getMonth() !== mesIdx) break;
+  }
+
+  return `<div class="mes-card">
+    <div class="mes-titulo">${MESES[mesIdx]} ${ano}</div>
+    <div class="mes-dias-cab">${['Lu','Ma','Mé','Xo','Ve','Sá','Do'].map(d=>`<div class="mes-dia-cab">${d}</div>`).join('')}</div>
+    <div class="mes-dias">${celas}</div>
+  </div>`;
+}
+
+// ============================================================
+// DETALLE DE RESERVA
+// ============================================================
+function verDetalle(id) {
+  const r = reservas.find(x => x.id === id);
+  if (!r) return;
+  const [a,m,d] = r.data.split('-');
+  document.getElementById('modal-corpo').innerHTML = `
+    <div class="modal-fila"><strong>Estado</strong><span><span class="estado-badge ${r.estado.toLowerCase()}">${r.estado}</span></span></div>
+    <div class="modal-fila"><strong>Persoa</strong><span>${r.asesora}</span></div>
+    <div class="modal-fila"><strong>Data</strong><span>${d}/${m}/${a} · ${r.turno} (${r.horaInicio} – ${r.horaFin})</span></div>
+    <div class="modal-fila"><strong>Espazos</strong><span>${r.espazos}</span></div>
+    <div class="modal-fila"><strong>Tipo</strong><span>${r.tipo}${r.codigo?' · '+r.codigo:''}${r.titulo?' — '+r.titulo:''}</span></div>
+    ${r.recursos?`<div class="modal-fila"><strong>Recursos</strong><span>${r.recursos}</span></div>`:''}
+    <div class="modal-fila"><strong>Pausa-café</strong><span>${r.cafe}</span></div>
+    <div class="modal-fila"><strong>Mobilidade reducida</strong><span>${r.mobilidade}</span></div>
+    ${r.observacions?`<div class="modal-fila"><strong>Observacións</strong><span>${r.observacions}</span></div>`:''}
+  `;
+  document.getElementById('modal-overlay').classList.add('aberto');
+}
+
+function pecharmModal(e) {
+  if (e.target === document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('aberto');
+}
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
+function mostrarPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('activo'));
+  document.getElementById('panel-' + id).classList.add('activo');
+  const idx = ['calendario','nova-reserva'].indexOf(id);
+  document.querySelectorAll('.nav-tab')[idx]?.classList.add('activo');
+  ocultarAlertas();
+}
+
+function mostrarAlerta(tipo) {
+  ocultarAlertas();
+  const el = document.getElementById('alerta-' + tipo);
+  if (el) { el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 5000); }
+}
+
+function ocultarAlertas() {
+  document.getElementById('alerta-exito').style.display = 'none';
+  document.getElementById('alerta-erro').style.display = 'none';
+}
+</script>
+</body>
+</html>
