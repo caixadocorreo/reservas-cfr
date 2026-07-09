@@ -696,6 +696,46 @@
     box-shadow: var(--sombra);
   }
 
+  /* Cadro CSV para copiar */
+  .csv-box {
+    background: #1e1e1e;
+    border-radius: var(--radio);
+    padding: 16px 20px;
+    margin-top: 16px;
+    display: none;
+  }
+  .csv-box-titulo {
+    color: #aaa;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .csv-box pre {
+    color: #e8f4fc;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    white-space: pre;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+  .btn-copiar {
+    background: var(--azul);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-copiar:hover { background: var(--azul-escuro); }
+  .btn-copiar.copiado { background: var(--verde); }
+
   @media (max-width: 640px) {
     .form-grid { grid-template-columns: 1fr; }
     .form-grid.tres { grid-template-columns: 1fr; }
@@ -883,6 +923,12 @@
               <input type="text" id="res-titulo" placeholder="Título completo">
             </div>
           </div>
+          <div class="form-grid un" style="margin-top:14px">
+            <div class="campo">
+              <label>Relator/a(s) <span style="font-weight:400;color:#888">(se hai máis dunha persoa, separar por ;)</span></label>
+              <input type="text" id="res-relator" placeholder="Ex: Ana García; Xosé Fraga">
+            </div>
+          </div>
         </div>
       </div>
 
@@ -904,6 +950,14 @@
       <div class="resumo-box" id="resumo-box" style="display:none">
         <h4>Resumo da solicitude</h4>
         <div id="resumo-contido"></div>
+      </div>
+
+      <div class="csv-box" id="csv-box">
+        <div class="csv-box-titulo">
+          <span>📋 Datos para a folla de Sesións (copiar e pegar)</span>
+          <button class="btn-copiar" id="btn-copiar" onclick="copiarCSV()">Copiar</button>
+        </div>
+        <pre id="csv-contido"></pre>
       </div>
 
       <div class="btns-fila">
@@ -1121,6 +1175,7 @@ function previsualizar() {
   const recursos = [...document.querySelectorAll('#recursos-lista input:checked')].map(i => i.value);
   const codigo = document.getElementById('res-codigo').value;
   const titulo = document.getElementById('res-titulo').value;
+  const relator = document.getElementById('res-relator').value;
   const obs = document.getElementById('res-observacions').value;
 
   const resumo = document.getElementById('resumo-contido');
@@ -1133,12 +1188,45 @@ function previsualizar() {
     <div class="resumo-fila"><strong>Mobilidade reducida:</strong><span>${mob}</span></div>
     <div class="resumo-fila"><strong>Espazos:</strong><span>${espazosSeleccionados.join(', ')}</span></div>
     <div class="resumo-fila"><strong>Tipo:</strong><span>${tipo}${codigo ? ' · ' + codigo : ''}${titulo ? ' — ' + titulo : ''}</span></div>
+    ${relator ? `<div class="resumo-fila"><strong>Relator/a(s):</strong><span>${relator}</span></div>` : ''}
     ${recursos.length ? `<div class="resumo-fila"><strong>Recursos:</strong><span>${recursos.join(', ')}</span></div>` : ''}
     ${obs ? `<div class="resumo-fila"><strong>Observacións:</strong><span>${obs}</span></div>` : ''}
   `;
   document.getElementById('resumo-box').style.display = 'block';
   document.getElementById('btn-enviar').style.display = 'inline-block';
+
+  // Xerar CSV para folla de Sesións (só para Formación)
+  const csvBox = document.getElementById('csv-box');
+  if (tipo === 'Formación' && espazosSeleccionados.length > 0) {
+    const [a,m,d] = data.split('-');
+    const dataFmt = `${d}/${m}/${a}`;
+    const codigoVal = document.getElementById('res-codigo').value;
+    const tituloVal = document.getElementById('res-titulo').value;
+    const relatorVal = document.getElementById('res-relator').value;
+    const liñas = espazosSeleccionados.map(espazo =>
+      `${dataFmt}	${espazo}	${codigoVal}	${tituloVal}	${relatorVal}	${horaIni}	${horaFin}`
+    );
+    const cabeceira = 'Data	Aula	Código	Título	Relator	HoraInicio	HoraFin';
+    document.getElementById('csv-contido').textContent = cabeceira + '\n' + liñas.join('\n');
+    csvBox.style.display = 'block';
+  } else {
+    csvBox.style.display = 'none';
+  }
+
   document.getElementById('resumo-box').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copiarCSV() {
+  const texto = document.getElementById('csv-contido').textContent;
+  navigator.clipboard.writeText(texto).then(() => {
+    const btn = document.getElementById('btn-copiar');
+    btn.textContent = '✓ Copiado';
+    btn.classList.add('copiado');
+    setTimeout(() => {
+      btn.textContent = 'Copiar';
+      btn.classList.remove('copiado');
+    }, 2000);
+  });
 }
 
 async function enviarReserva() {
@@ -1152,13 +1240,14 @@ async function enviarReserva() {
   const recursos = [...document.querySelectorAll('#recursos-lista input:checked')].map(i => i.value);
   const codigo = document.getElementById('res-codigo').value;
   const titulo = document.getElementById('res-titulo').value;
+  const relator = document.getElementById('res-relator').value;
   const obs = document.getElementById('res-observacions').value;
 
   const payload = {
     asesora: usuarioActual,
     data, turno, horaInicio: horaIni, horaFin,
     espazos: espazosSeleccionados.join('; '),
-    tipo, codigo, titulo,
+    tipo, codigo, titulo, relator,
     recursos: recursos.join('; '),
     cafe, mobilidade: mob,
     observacions: obs,
@@ -1194,6 +1283,7 @@ function limparFormulario() {
   document.getElementById('res-codigo').value = '';
   document.getElementById('res-titulo').value = '';
   document.getElementById('res-observacions').value = '';
+  document.getElementById('res-relator').value = '';
   document.querySelectorAll('input[name="cafe"]')[0].checked = true;
   document.querySelectorAll('input[name="mobilidade"]')[0].checked = true;
   document.querySelectorAll('#recursos-lista input').forEach(i => {
@@ -1207,6 +1297,7 @@ function limparFormulario() {
   actualizarRadios();
   document.getElementById('resumo-box').style.display = 'none';
   document.getElementById('btn-enviar').style.display = 'none';
+  document.getElementById('csv-box').style.display = 'none';
 }
 
 // ============================================================
@@ -1227,22 +1318,8 @@ async function cargarReservas() {
         else { cur += c; }
       }
       cols.push(cur.trim());
-      // Converter data de DD/MM/AAAA ou M/D/AAAA a AAAA-MM-DD
-      let dataRaw = cols[2] || '';
-      let dataISO = '';
-      if (dataRaw) {
-        const partes = dataRaw.split('/');
-        if (partes.length === 3) {
-          // Detectar formato: se o ano é o 3º elemento
-          const [p1, p2, p3] = partes;
-          if (p3.length === 4) {
-            // DD/MM/AAAA ou M/D/AAAA
-            dataISO = p3 + '-' + p2.padStart(2,'0') + '-' + p1.padStart(2,'0');
-          } else {
-            dataISO = dataRaw;
-          }
-        }
-      }
+      // A data vén en formato AAAA-MM-DD directamente desde o Sheet
+      const dataISO = (cols[2] || '').trim();
       return {
         id: idx + 1,
         timestamp: cols[0] || '',
