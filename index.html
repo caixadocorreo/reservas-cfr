@@ -1356,11 +1356,12 @@ async function cargarReservas() {
         tipo:      cols[7] || '',
         codigo:    cols[8] || '',
         titulo:    cols[9] || '',
-        recursos:  cols[10] || '',
-        cafe:      cols[11] || '',
-        mobilidade: cols[12] || '',
-        observacions: cols[13] || '',
-        estado:    cols[14] || 'Pendente',
+        relator:   cols[10] || '',
+        recursos:  cols[11] || '',
+        cafe:      cols[12] || '',
+        mobilidade: cols[13] || '',
+        observacions: cols[14] || '',
+        estado:    cols[15] || 'Pendente',
       };
     });
     renderCalendario();
