@@ -751,6 +751,7 @@
       <div class="cal-controis">
         <div class="cal-vistas">
           <button class="cal-vista-btn activo" onclick="cambiarVista('semana')">Semana</button>
+          <button class="cal-vista-btn" onclick="cambiarVista('mes')">Mes</button>
           <button class="cal-vista-btn" onclick="cambiarVista('cuat1')">Set–Dec</button>
           <button class="cal-vista-btn" onclick="cambiarVista('trim2')">Xan–Mar</button>
           <button class="cal-vista-btn" onclick="cambiarVista('trim3')">Abr–Xuñ</button>
@@ -932,7 +933,9 @@
 // CONFIGURACIÓN — EDITAR AQUÍ
 // ============================================================
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyy4O0ohgbt9qwk33lvsrUpDVn1cPkivEMuhxfccDG7vfG7DdebPUBgE2_xi9PSU9k6eQ/exec';
-const PIN_CORRECTO = 'CFR2026'; // Cambiar por PIN real
+const PIN_CORRECTO = 'CFR2026';
+const CSV_RECURSOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1567420509&single=true&output=csv';
+const CSV_RESERVAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=0&single=true&output=csv'; // Cambiar por PIN real
 
 const ESPAZOS_TODOS = [
   { nome: 'Aula 0',        andar: 'Planta baixa', accesible: true  },
@@ -992,21 +995,51 @@ document.getElementById('login-asesora').addEventListener('keydown', e => { if (
 // ============================================================
 // INICIO
 // ============================================================
+async function cargarRecursos() {
+  if (CSV_RECURSOS_URL === 'PENDENTE_URL_RECURSOS') {
+    renderRecursos();
+    return;
+  }
+  try {
+    const resp = await fetch(CSV_RECURSOS_URL);
+    const texto = await resp.text();
+    const liñas = texto.trim().split('\n').slice(1);
+    const lista = liñas.filter(l => l.trim()).map(l => {
+      const cols = [];
+      let cur='', inQ=false;
+      for (let i=0;i<l.length;i++){
+        const c=l[i];
+        if(c==='"'){inQ=!inQ;}
+        else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+        else{cur+=c;}
+      }
+      cols.push(cur.trim());
+      return { nome: cols[0]||'', activo: (cols[1]||'').toLowerCase() };
+    }).filter(r => r.nome && r.activo !== 'non' && r.activo !== 'no')
+      .map(r => r.nome);
+    renderRecursos(lista);
+  } catch(e) {
+    console.error('Erro ao cargar recursos:', e);
+    renderRecursos();
+  }
+}
+
 function iniciar() {
-  renderRecursos();
+  cargarRecursos();
   actualizarEspazosDisponibles();
   popularFiltroEspazo();
   cargarReservas();
+  setInterval(cargarReservas, 60000);
 
-  // Data mínima hoxe
   const hoxe = new Date();
   const minData = hoxe.toISOString().split('T')[0];
   document.getElementById('res-data').min = minData;
 }
 
-function renderRecursos() {
+function renderRecursos(lista) {
+  const items = lista || RECURSOS;
   const cont = document.getElementById('recursos-lista');
-  cont.innerHTML = RECURSOS.map(r => `
+  cont.innerHTML = items.map(r => `
     <label class="recurso-check" onclick="this.classList.toggle('marcado')">
       <input type="checkbox" value="${r}"> ${r}
     </label>`).join('');
@@ -1180,31 +1213,88 @@ function limparFormulario() {
 // CARGA DE RESERVAS (DEMO + APPS SCRIPT)
 // ============================================================
 async function cargarReservas() {
-  // Datos de demo
-  const hoxe = new Date();
-  const fmt = d => d.toISOString().split('T')[0];
-  const d1 = new Date(hoxe); d1.setDate(hoxe.getDate() + 1);
-  const d2 = new Date(hoxe); d2.setDate(hoxe.getDate() + 3);
-  const d3 = new Date(hoxe); d3.setDate(hoxe.getDate() + 5);
-  reservas = [
-    { id:1, asesora:'AMG', data:fmt(hoxe), turno:'Tarde', horaInicio:'16:00', horaFin:'20:00', espazos:'Aula 1; Aula 2', tipo:'Formación', codigo:'V2501027', titulo:'Programar por ámbitos', recursos:'Carro 1 (21 portátiles)', cafe:'Si', mobilidade:'Non', observacions:'', estado:'Aprobada' },
-    { id:2, asesora:'RGP', data:fmt(d1), turno:'Mañá', horaInicio:'09:00', horaFin:'14:00', espazos:'Salón de actos', tipo:'Reunión interna', codigo:'', titulo:'', recursos:'', cafe:'Non', mobilidade:'Non', observacions:'Reunión de coordinación', estado:'Pendente' },
-    { id:3, asesora:'XFR', data:fmt(d2), turno:'Tarde', horaInicio:'16:30', horaFin:'20:30', espazos:'Aula 3', tipo:'Formación', codigo:'V2501010', titulo:'Realidade Virtual', recursos:'Kit audiovisual (Vídeo)', cafe:'Si', mobilidade:'Non', observacions:'', estado:'Pendente' },
-    { id:4, asesora:'AMG', data:fmt(d3), turno:'Mañá', horaInicio:'09:00', horaFin:'14:00', espazos:'Polo A', tipo:'Docencia compartida PFPP', codigo:'', titulo:'', recursos:'', cafe:'Non', mobilidade:'Si', observacions:'', estado:'Rexeitada' },
-  ];
-  renderCalendario();
+  try {
+    const resp = await fetch(CSV_RESERVAS_URL);
+    const texto = await resp.text();
+    const liñas = texto.trim().split('\n').slice(1);
+    reservas = liñas.filter(l => l.trim()).map((liña, idx) => {
+      const cols = [];
+      let cur = '', inQ = false;
+      for (let i = 0; i < liña.length; i++) {
+        const c = liña[i];
+        if (c === '"') { inQ = !inQ; }
+        else if (c === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+        else { cur += c; }
+      }
+      cols.push(cur.trim());
+      // Converter data de DD/MM/AAAA ou M/D/AAAA a AAAA-MM-DD
+      let dataRaw = cols[2] || '';
+      let dataISO = '';
+      if (dataRaw) {
+        const partes = dataRaw.split('/');
+        if (partes.length === 3) {
+          // Detectar formato: se o ano é o 3º elemento
+          const [p1, p2, p3] = partes;
+          if (p3.length === 4) {
+            // DD/MM/AAAA ou M/D/AAAA
+            dataISO = p3 + '-' + p2.padStart(2,'0') + '-' + p1.padStart(2,'0');
+          } else {
+            dataISO = dataRaw;
+          }
+        }
+      }
+      return {
+        id: idx + 1,
+        timestamp: cols[0] || '',
+        asesora:   cols[1] || '',
+        data:      dataISO,
+        turno:     cols[3] || '',
+        horaInicio: cols[4] || '',
+        horaFin:   cols[5] || '',
+        espazos:   cols[6] || '',
+        tipo:      cols[7] || '',
+        codigo:    cols[8] || '',
+        titulo:    cols[9] || '',
+        recursos:  cols[10] || '',
+        cafe:      cols[11] || '',
+        mobilidade: cols[12] || '',
+        observacions: cols[13] || '',
+        estado:    cols[14] || 'Pendente',
+      };
+    });
+    renderCalendario();
+  } catch(e) {
+    console.error('Erro ao cargar reservas:', e);
+    reservas = [];
+    renderCalendario();
+  }
 }
 
 // ============================================================
 // CALENDARIOS
 // ============================================================
+let mesOffset = 0;
+
 function cambiarVista(v) {
   vistaActual = v;
   document.querySelectorAll('.cal-vista-btn').forEach((b,i) => {
-    b.classList.toggle('activo', ['semana','cuat1','trim2','trim3'][i] === v);
+    b.classList.toggle('activo', ['semana','mes','cuat1','trim2','trim3'][i] === v);
   });
   const nav = document.getElementById('cal-nav');
-  nav.style.display = v === 'semana' ? 'flex' : 'none';
+  nav.style.display = (v === 'semana' || v === 'mes') ? 'flex' : 'none';
+  // Actualizar funcións de nav segundo a vista
+  if (v === 'mes') {
+    document.querySelector('.cal-nav button:first-child').setAttribute('onclick','navMes(-1)');
+    document.querySelector('.cal-nav button:last-child').setAttribute('onclick','navMes(1)');
+  } else {
+    document.querySelector('.cal-nav button:first-child').setAttribute('onclick','navSemana(-1)');
+    document.querySelector('.cal-nav button:last-child').setAttribute('onclick','navSemana(1)');
+  }
+  renderCalendario();
+}
+
+function navMes(dir) {
+  mesOffset += dir;
   renderCalendario();
 }
 
@@ -1216,7 +1306,18 @@ function navSemana(dir) {
 function renderCalendario() {
   const cont = document.getElementById('cal-contido');
   if (vistaActual === 'semana') renderSemana(cont);
+  else if (vistaActual === 'mes') renderMesUnico(cont);
   else renderMultiMes(cont);
+}
+
+function renderMesUnico(cont) {
+  const agora = new Date();
+  const d = new Date(agora.getFullYear(), agora.getMonth() + mesOffset, 1);
+  const mesIdx = d.getMonth();
+  const ano = d.getFullYear();
+  document.getElementById('cal-label').textContent = `${MESES[mesIdx]} ${ano}`;
+  const rFiltradas = filtrarReservas(reservas);
+  cont.innerHTML = `<div style="max-width:900px">${renderMes(mesIdx, ano, rFiltradas, true)}</div>`;
 }
 
 function filtrarReservas(lista) {
@@ -1252,28 +1353,31 @@ function renderSemana(cont) {
   const label = `${lun.getDate()} ${MESES[lun.getMonth()].substring(0,3)} – ${ven.getDate()} ${MESES[ven.getMonth()].substring(0,3)} ${ven.getFullYear()}`;
   document.getElementById('cal-label').textContent = label;
 
-  const dias = Array.from({length:5}, (_,i) => {
+  // Luns a sábado (6 días)
+  const dias = Array.from({length:6}, (_,i) => {
     const d = new Date(lun); d.setDate(lun.getDate() + i); return d;
   });
 
   const rFiltradas = filtrarReservas(reservas);
 
-  let html = `<div class="semana-grid">
-    <div class="semana-cabeceira">
+  let html = `<div class="semana-grid" style="grid-template-columns: 80px repeat(6,1fr)">
+    <div class="semana-cabeceira" style="grid-template-columns: 80px repeat(6,1fr)">
       <div class="semana-cab-cel">Turno</div>
       ${dias.map(d => {
         const esHoxe = fmt(d) === fmt(new Date());
-        return `<div class="semana-cab-cel" style="${esHoxe?'background:rgba(255,255,255,0.2)':''}">${DIAS_CURTOS[d.getDay()]} ${d.getDate()}</div>`;
+        const esSab = d.getDay() === 6;
+        return `<div class="semana-cab-cel" style="${esHoxe?'background:rgba(255,255,255,0.2)':''}${esSab?';opacity:0.75':''}">${DIAS_CURTOS[d.getDay()]} ${d.getDate()}</div>`;
       }).join('')}
     </div>
-    <div class="semana-corpo">`;
+    <div class="semana-corpo" style="grid-template-columns: 80px repeat(6,1fr)">`;
 
   ['Mañá','Tarde'].forEach(turno => {
     html += `<div class="semana-turno-label">${turno}</div>`;
     dias.forEach(d => {
       const fmtD = fmt(d);
+      const esSab = d.getDay() === 6;
       const evs = rFiltradas.filter(r => r.data === fmtD && r.turno === turno);
-      html += `<div class="semana-cel">${evs.map(r =>
+      html += `<div class="semana-cel" style="${esSab?'background:#f5f5f5':''}">${evs.map(r =>
         `<div class="evento-semana ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})'>
           <div>${r.espazos.split(';')[0].trim()}</div>
           <div style="font-weight:400;font-size:11px">${r.horaInicio}–${r.horaFin} · ${r.asesora}</div>
@@ -1308,9 +1412,8 @@ function renderMultiMes(cont) {
   cont.innerHTML = html;
 }
 
-function renderMes(mesIdx, ano, rFiltradas) {
+function renderMes(mesIdx, ano, rFiltradas, grande) {
   const pri = new Date(ano, mesIdx, 1);
-  const ult = new Date(ano, mesIdx + 1, 0);
   const inicioGrid = new Date(pri);
   const diaIni = pri.getDay() === 0 ? 6 : pri.getDay() - 1;
   inicioGrid.setDate(1 - diaIni);
@@ -1321,13 +1424,15 @@ function renderMes(mesIdx, ano, rFiltradas) {
     const fmtD = fmt(cur);
     const outroMes = cur.getMonth() !== mesIdx;
     const esHoxe = fmtD === fmt(new Date());
+    const esDomingo = cur.getDay() === 0;
     const evs = rFiltradas.filter(r => r.data === fmtD);
-    const cls = `mes-dia${outroMes?' outro-mes':''}${esHoxe?' hoxe':''}`;
-    celas += `<div class="${cls}">
-      <div class="mes-dia-num">${cur.getDate()}</div>
-      ${evs.map(r => `<div class="evento ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})' title="${r.espazos} · ${r.asesora}">
+    const estilo = esDomingo ? 'background:#f0f0f0;' : '';
+    const altoCela = grande ? 'min-height:80px;' : '';
+    celas += `<div class="mes-dia${outroMes?' outro-mes':''}${esHoxe?' hoxe':''}" style="${estilo}${altoCela}">
+      <div class="mes-dia-num" style="${esDomingo?'color:#bbb':''}">${cur.getDate()}</div>
+      ${!esDomingo ? evs.map(r => `<div class="evento ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})' title="${r.espazos} · ${r.asesora}">
         ${r.espazos.split(';')[0].trim().replace('Aula ','A').replace('Salón de actos','Salón').replace('Polo ','P')}
-      </div>`).join('')}
+      </div>`).join('') : ''}
     </div>`;
     cur.setDate(cur.getDate() + 1);
     if (i >= 34 && cur.getMonth() !== mesIdx) break;
@@ -1335,7 +1440,7 @@ function renderMes(mesIdx, ano, rFiltradas) {
 
   return `<div class="mes-card">
     <div class="mes-titulo">${MESES[mesIdx]} ${ano}</div>
-    <div class="mes-dias-cab">${['Lu','Ma','Mé','Xo','Ve','Sá','Do'].map(d=>`<div class="mes-dia-cab">${d}</div>`).join('')}</div>
+    <div class="mes-dias-cab">${['Lu','Ma','Mé','Xo','Ve','Sá','Do'].map((d,i)=>`<div class="mes-dia-cab" style="${i===6?'color:#bbb':''}">${d}</div>`).join('')}</div>
     <div class="mes-dias">${celas}</div>
   </div>`;
 }
