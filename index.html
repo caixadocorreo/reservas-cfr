@@ -2229,10 +2229,9 @@ async function editarReserva(id) {
         method: 'POST',
         body: JSON.stringify({
           _accion: 'substituir',
-          timestamp: r.timestamp,
           asesora: r.asesora,
-          data: r.data,
           espazos: r.espazos,
+          horaInicio: r.horaInicio,
         }),
       });
     } catch(e) { console.error('Erro ao marcar como substituída:', e); }
