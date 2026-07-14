@@ -799,6 +799,49 @@
   .btn-copiar:hover { background: var(--azul-escuro); }
   .btn-copiar.copiado { background: var(--verde); }
 
+  /* =====================================================
+     IMPRESIÓN / PDF
+  ===================================================== */
+  @media print {
+    body { background: white; font-size: 11px; }
+    header, nav.nav-tabs, .cal-controis, .lenda,
+    #btn-exportar-wrap, .nav-tabs, #panel-nova-reserva,
+    .modal-overlay { display: none !important; }
+    #panel-calendario { display: block !important; }
+    #alerta-exito, #alerta-erro { display: none !important; }
+    main { margin: 0; padding: 0; max-width: 100%; }
+
+    .pdf-cabeceira {
+      display: flex !important;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #007bc4;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+    .pdf-cab-titulo { font-size: 14px; font-weight: 700; color: #007bc4; }
+    .pdf-cab-subtitulo { font-size: 11px; color: #555; }
+    .pdf-cab-logo { font-size: 12px; font-weight: 700; color: #007bc4; text-align: right; }
+
+    /* Semana */
+    .semana-grid { box-shadow: none; border: 1px solid #ccc; font-size: 10px; }
+    .semana-cabeceira { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .semana-cel { min-height: 60px; }
+    .evento-semana { font-size: 9px; padding: 2px 4px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Mes */
+    .mes-card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    .mes-titulo { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .mes-dia { min-height: 50px; }
+    .evento { font-size: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .multi-mes-grid.catro { grid-template-columns: repeat(2, 1fr); }
+    .multi-mes-grid.tres { grid-template-columns: repeat(3, 1fr); }
+
+    @page { margin: 1.5cm; size: A4 landscape; }
+  }
+
+  .pdf-cabeceira { display: none; }
+
   @media (max-width: 640px) {
     .form-grid { grid-template-columns: 1fr; }
     .form-grid.tres { grid-template-columns: 1fr; }
@@ -878,9 +921,17 @@
         </div>
       </div>
 
-      <div id="btn-exportar-wrap" style="margin-bottom:12px;display:none">
+      <div id="btn-exportar-wrap" style="margin-bottom:12px;display:none;display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-secundario" onclick="exportarSemana()" style="font-size:13px">
           📋 Exportar semana para Sesións
+        </button>
+        <button class="btn btn-secundario" onclick="exportarPDF()" style="font-size:13px">
+          🖨️ Descargar PDF
+        </button>
+      </div>
+      <div id="btn-pdf-mes-wrap" style="margin-bottom:12px;display:none">
+        <button class="btn btn-secundario" onclick="exportarPDF()" style="font-size:13px">
+          🖨️ Descargar PDF
         </button>
       </div>
       <div class="lenda">
@@ -889,6 +940,7 @@
         <div class="lenda-item"><div class="lenda-cor rexeitada"></div> Rexeitada</div>
       </div>
 
+      <div class="pdf-cabeceira" id="pdf-cabeceira-dyn"></div>
       <div id="cal-contido"></div>
     </div>
 
@@ -1235,7 +1287,8 @@ function iniciar() {
   const hoxe = new Date();
   const minData = hoxe.toISOString().split('T')[0];
   document.getElementById('res-data').min = minData;
-  document.getElementById('btn-exportar-wrap').style.display = 'block';
+  document.getElementById('btn-exportar-wrap').style.display = 'flex';
+  document.getElementById('btn-pdf-mes-wrap').style.display = 'none';
 }
 
 let RECURSOS_ACTUAIS = [...RECURSOS];
@@ -1657,7 +1710,8 @@ function cambiarVista(v) {
     document.querySelector('.cal-nav button:last-child').setAttribute('onclick','navSemana(1)');
   }
   renderCalendario();
-  document.getElementById('btn-exportar-wrap').style.display = v === 'semana' ? 'block' : 'none';
+  document.getElementById('btn-exportar-wrap').style.display = v === 'semana' ? 'flex' : 'none';
+  document.getElementById('btn-pdf-mes-wrap').style.display = (v === 'mes' || v === 'cuat1' || v === 'trim2' || v === 'trim3') ? 'block' : 'none';
 }
 
 function navMes(dir) {
@@ -1750,7 +1804,7 @@ function renderSemana(cont) {
       html += `<div class="semana-cel" style="${esSab?'background:#f5f5f5':''}">${evs.map(r =>
         `<div class="evento-semana ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})'>
           <div>${r.espazos.split(';')[0].trim()}</div>
-          <div style="font-weight:400;font-size:11px">${r.horaInicio}–${r.horaFin} · ${r.asesora}</div>
+          <div style="font-weight:400;font-size:11px">${r.horaInicio}–${r.horaFin} · ${r.asesora}${r.codigo?' · '+r.codigo:''}</div>
         </div>`
       ).join('')}</div>`;
     });
@@ -1800,8 +1854,8 @@ function renderMes(mesIdx, ano, rFiltradas, grande) {
     const altoCela = grande ? 'min-height:80px;' : '';
     celas += `<div class="mes-dia${outroMes?' outro-mes':''}${esHoxe?' hoxe':''}" style="${estilo}${altoCela}">
       <div class="mes-dia-num" style="${esDomingo?'color:#bbb':''}">${cur.getDate()}</div>
-      ${!esDomingo ? evs.map(r => `<div class="evento ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})' title="${r.espazos} · ${r.asesora}">
-        ${r.espazos.split(';')[0].trim().replace('Aula ','A').replace('Salón de actos','Salón').replace('Polo ','P')}
+      ${!esDomingo ? evs.map(r => `<div class="evento ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})' title="${r.espazos} · ${r.asesora} · ${r.horaInicio}–${r.horaFin}">
+        ${r.espazos.split(';')[0].trim().replace('Aula ','A').replace('Salón de actos','Sal').replace('Polo ','P')} ${r.asesora}${r.codigo?' '+r.codigo:''}
       </div>`).join('') : ''}
     </div>`;
     cur.setDate(cur.getDate() + 1);
@@ -1834,6 +1888,38 @@ function verDetalle(id) {
     ${r.observacions?`<div class="modal-fila"><strong>Observacións</strong><span>${r.observacions}</span></div>`:''}
   `;
   document.getElementById('modal-overlay').classList.add('aberto');
+}
+
+function exportarPDF() {
+  // Construír cabeceira informativa antes de imprimir
+  const cab = document.getElementById('pdf-cabeceira-dyn');
+  const agora = new Date();
+  const meses2 = ['xaneiro','febreiro','marzo','abril','maio','xuño','xullo','agosto','setembro','outubro','novembro','decembro'];
+
+  let subtitulo = '';
+  if (vistaActual === 'semana') {
+    const lun = getLunesDeOfset(semanaOffset);
+    const sab = new Date(lun); sab.setDate(lun.getDate() + 5);
+    subtitulo = `Semana do ${lun.getDate()} ao ${sab.getDate()} de ${MESES[sab.getMonth()]} de ${sab.getFullYear()}`;
+  } else if (vistaActual === 'mes') {
+    const d = new Date(agora.getFullYear(), agora.getMonth() + mesOffset, 1);
+    subtitulo = `${MESES[d.getMonth()]} ${d.getFullYear()}`;
+  } else if (vistaActual === 'cuat1') {
+    subtitulo = `Cuadrimestre setembro–decembro ${agora.getFullYear()}`;
+  } else if (vistaActual === 'trim2') {
+    subtitulo = `Trimestre xaneiro–marzo`;
+  } else if (vistaActual === 'trim3') {
+    subtitulo = `Trimestre abril–xuño`;
+  }
+
+  cab.innerHTML = `
+    <div>
+      <div class="pdf-cab-titulo">Reserva de espazos · CFR de Vigo</div>
+      <div class="pdf-cab-subtitulo">${subtitulo}</div>
+    </div>
+    <div class="pdf-cab-logo">CFR DE VIGO<br><span style="font-weight:400;font-size:10px">Centro de Formación e Recursos</span></div>`;
+
+  window.print();
 }
 
 function exportarSemana() {
