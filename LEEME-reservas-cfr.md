@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real e exportación para a cartelería TV. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
+Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
 URL en produción: `https://caixadocorreo.github.io/reservas-cfr/`
 
@@ -43,21 +43,38 @@ Premendo en calquera evento do calendario ábrese un panel con todos os datos.
 ### Actualización automática
 O calendario recarga os datos do Sheet cada **60 segundos**.
 
+### Exportar a PDF
+En todas as vistas aparece o botón **🖨️ Descargar PDF** que abre o diálogo de impresión do navegador en formato A4 apaisado. O PDF inclúe:
+- Cabeceira con "Reserva de espazos · CFR de Vigo" e o período
+- Eventos con aula, horario, iniciais e código
+- Cores por estado conservadas
+
+### Exportar semana para Sesións (cartelería TV)
+Na vista **Semana** aparece tamén o botón **📋 Exportar semana para Sesións**, que xera os datos das reservas Aprobadas de tipo AFI e Formación PFPP no formato da folla de Sesións da cartelería TV, listo para copiar e pegar.
+
 ---
 
 ## 3. Nova reserva
 
-### Paso 1 — Data e horario
-- **Data** (mínimo: hoxe)
-- **Turno**: Mañá ou Tarde
-- **Hora de inicio e hora de fin**
-- **Pausa-café**: Si ou Non
+### Paso 1 — Tipo de actividade
 
-> Para reservas de tipo **AFI** e **Formación PFPP** o horario e a pausa-café introdúcense por sesión no paso 3b.
+**Tipos dispoñibles:**
+- **AFI** → activa catálogo, campos de código/título e táboa de sesións múltiples
+- **Formación PFPP** → activa catálogo, campos de código/título e táboa de sesións múltiples
+- **Reunión interna** → sen código nin sesións múltiples
+- **Videoconferencia** → sen código nin sesións múltiples
+- **Docencia compartida PFPP** → sen código nin sesións múltiples
+- **Docencia compartida AFC** → sen código nin sesións múltiples
 
-### Paso 2 — Espazos
-- Indicar se hai **persoas con mobilidade reducida** — se Si, só se mostran espazos de planta baixa
-- Engadir os espazos necesarios un a un co botón "+ Engadir"
+Para **AFI** e **Formación PFPP** aparece un despregable de **catálogo** que auto-enche o código e o título. Se a actividade non está no catálogo, escríbese manualmente.
+
+### Paso 2 — Data e horario
+Só visible para tipos de sesión única (Reunión interna, Videoconferencia, Docencias compartidas).
+- Data (mínimo: hoxe), Turno, Hora inicio, Hora fin, Pausa-café
+
+### Paso 3 — Espazos
+- Indicar se hai persoas con **mobilidade reducida** — se Si, só se mostran espazos de planta baixa
+- Engadir espazos un a un co botón "+ Engadir"
 
 **Espazos dispoñibles:**
 | Espazo (nome exacto) | Andar | Accesible |
@@ -75,21 +92,8 @@ O calendario recarga os datos do Sheet cada **60 segundos**.
 | `Aula 7` | 2º andar | Non |
 | `Aula 8` | 2º andar | Non |
 
-### Paso 3 — Tipo de actividade e código
-
-**Tipos dispoñibles:**
-- **AFI** → activa catálogo, campos de código/título e táboa de sesións múltiples
-- **Formación PFPP** → activa catálogo, campos de código/título e táboa de sesións múltiples
-- **Reunión interna** → sen código
-- **Videoconferencia** → sen código
-- **Docencia compartida PFPP** → sen código
-- **Docencia compartida AFC** → sen código
-
-Para **AFI** e **Formación PFPP** aparece un despregable de **catálogo** que auto-enche o código e o título ao seleccionar a actividade. Se a actividade non está no catálogo, pódese escribir manualmente.
-
-### Paso 3b — Sesións (só AFI e Formación PFPP)
-
-Táboa de sesións onde se engade unha fila por cada día de formación:
+### Paso 4 — Sesións (só AFI e Formación PFPP)
+Táboa onde se engade unha fila por cada día de formación:
 
 | Campo | Contido |
 |---|---|
@@ -97,13 +101,13 @@ Táboa de sesións onde se engade unha fila por cada día de formación:
 | Hora inicio | Hora de comezo |
 | Hora fin | Hora de remate |
 | Relator/a(s) | Pode variar por sesión. Separar por `;` se hai varias persoas |
-| Recursos | Recurso necesario ese día (un por sesión) |
+| Recursos | Recurso necesario ese día |
 | Café | Si ou Non para esa sesión |
 
-Botón **"+ Engadir sesión"** para ir completando a táboa. Ao enviar, xérase unha fila no Sheet por cada sesión.
+Botón **"+ Engadir sesión"** para ir completando. Ao enviar, xérase unha fila no Sheet por cada sesión.
 
-### Paso 4 — Recursos (só para tipos non multisesión)
-Selección de recursos para reservas de sesión única. A lista cárgase desde a folla `Recursos` do Sheet.
+### Paso 4 — Recursos (só para tipos de sesión única)
+Selección de recursos. A lista cárgase desde a folla `Recursos` do Sheet.
 
 **Recursos actuais:**
 - Carro 1 (21 portátiles)
@@ -112,11 +116,11 @@ Selección de recursos para reservas de sesión única. A lista cárgase desde a
 - Kit audiovisual (Radio)
 - Kit audiovisual (Vídeo)
 
-### Paso 4 — Observacións
+### Paso 5 — Observacións
 Campo de texto libre para información adicional.
 
 ### Previsualización e envío
-Antes de enviar móstrase un **resumo** con todos os datos. Ao confirmar, a reserva envíase ao Sheet co estado `Pendente`.
+Antes de enviar móstrase un resumo completo. Ao confirmar, xérase unha fila no Sheet por cada sesión co estado `Pendente`.
 
 ---
 
@@ -126,28 +130,14 @@ A persoa responsable traballa directamente no **Google Sheet**:
 
 1. Abre a folla `Reservas`
 2. Na columna **P (Estado)**, cambia o valor mediante o despregable: `Pendente` → `Aprobada` ou `Rexeitada`
-3. Pódese modificar calquera campo (espazo, horario...) antes de aprobar se é necesario
+3. Pódese modificar calquera campo antes de aprobar (espazo, horario, etc.)
 4. O calendario web reflicte o cambio no seguinte ciclo de recarga (máximo 60 segundos)
 
----
-
-## 5. Exportar semana para a folla de Sesións (cartelería TV)
-
-Na vista **Semana** do calendario aparece o botón **"📋 Exportar semana para Sesións"**.
-
-Xera os datos das reservas **Aprobadas** de tipo **AFI** ou **Formación PFPP** da semana visible, no formato da folla de Sesións da cartelería TV:
-
-```
-Data    Aula    Código    Título    Relator    HoraInicio    HoraFin
-```
-
-- Unha fila por cada espazo de cada reserva
-- Ordenadas por data e hora
-- Botón **Copiar** para pegar directamente na folla de Sesións
+**Consello**: usa **Datos → Crear un filtro** para ordenar e filtrar por estado, data ou espazo sen alterar a orde real dos datos nin o CSV publicado.
 
 ---
 
-## 6. Fonte de datos — Google Sheet
+## 5. Fonte de datos — Google Sheet
 
 ### Folla `Reservas`
 | Columna | Campo |
@@ -170,7 +160,6 @@ Data    Aula    Código    Título    Relator    HoraInicio    HoraFin
 | P | **Estado** (`Pendente` / `Aprobada` / `Rexeitada`) |
 
 ### Folla `Catalogo`
-Catálogo de actividades para o despregable do formulario.
 | Columna | Campo |
 |---|---|
 | A | Tipo (`AFI` ou `Formación PFPP`) |
@@ -178,24 +167,19 @@ Catálogo de actividades para o despregable do formulario.
 | C | Título |
 | D | Activo (`Si` / `Non`) |
 
-Para desactivar unha actividade do despregable sen borrala, pon `Non` na columna Activo.
-
 ### Folla `Recursos`
-Lista de recursos reservables.
 | Columna | Campo |
 |---|---|
 | A | Nome do recurso |
 | B | Activo (`Si` / `Non`) |
 
 ### Folla `Asesoras`
-Lista de códigos e nomes reais. Só uso interno.
 | Columna | Campo |
 |---|---|
 | A | Código (3 letras) |
 | B | Nome completo |
 
 ### Folla `Config`
-PIN de acceso. Só uso interno.
 | Columna | Campo |
 |---|---|
 | A | `PIN` |
@@ -203,7 +187,7 @@ PIN de acceso. Só uso interno.
 
 ---
 
-## 7. Constantes CSV no código
+## 6. Constantes CSV no código
 
 | Constante | Folla |
 |---|---|
@@ -211,7 +195,11 @@ PIN de acceso. Só uso interno.
 | `CSV_RECURSOS_URL` | Recursos (formulario) |
 | `CSV_CATALOGO_URL` | Catálogo de actividades |
 
-Se algunha folla cambia de URL de publicación, actualiza a constante no código e sube de novo a GitHub.
+---
+
+## 7. Cabeceira
+
+A cabeceira da aplicación ten o mesmo estilo que a cartelería TV e o carrusel: logo CFR á esquerda, título centrado con as iniciais da persoa conectada, e logo Xacobeo 2027 á dereita. Os logos están embutidos en base64 no código.
 
 ---
 
@@ -227,15 +215,15 @@ Se algunha folla cambia de URL de publicación, actualiza a constante no código
 ## 9. Engadir novos recursos
 
 1. Abre a folla `Recursos` do Sheet
-2. Engade unha nova fila co nome e `Si` en Activo
+2. Engade fila co nome e `Si` en Activo
 3. O formulario actualízase automaticamente
 
 ---
 
-## 10. Engadir novas actividades ao catálogo
+## 10. Engadir actividades ao catálogo
 
 1. Abre a folla `Catalogo` do Sheet
-2. Engade unha nova fila con Tipo, Código, Título e `Si` en Activo
+2. Engade fila con Tipo, Código, Título e `Si` en Activo
 3. O despregable actualízase automaticamente
 
 ---
@@ -244,17 +232,14 @@ Se algunha folla cambia de URL de publicación, actualiza a constante no código
 
 1. Descarga o `index.html` de GitHub
 2. Busca: `const ESPAZOS_TODOS = [`
-3. Engade o novo espazo:
-   ```javascript
-   { nome: 'Nome do espazo', andar: 'Planta baixa', accesible: true },
-   ```
+3. Engade: `{ nome: 'Nome', andar: 'Planta baixa', accesible: true },`
 4. Sube de novo a GitHub
 
 ---
 
 ## 12. Actualización do sistema
 
-Para cambios no **contido** (recursos, catálogo, estado de reservas): editar o Google Sheet directamente.
+Para cambios no **contido** (recursos, catálogo, estados): editar o Google Sheet.
 
 Para cambios no **código ou deseño**:
 1. Editar o ficheiro `index.html`
