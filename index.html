@@ -2227,7 +2227,13 @@ async function editarReserva(id) {
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        body: JSON.stringify({ _accion: 'substituir', timestamp: r.timestamp }),
+        body: JSON.stringify({
+          _accion: 'substituir',
+          timestamp: r.timestamp,
+          asesora: r.asesora,
+          data: r.data,
+          espazos: r.espazos,
+        }),
       });
     } catch(e) { console.error('Erro ao marcar como substituída:', e); }
   }
@@ -2313,7 +2319,12 @@ function toggleAxuda(cab) {
 function mostrarAlerta(tipo) {
   ocultarAlertas();
   const el = document.getElementById('alerta-' + tipo);
-  if (el) { el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 5000); }
+  if (!el) return;
+  el.style.display = 'block';
+  // A alerta de edición mantense ata que se envíe ou se limpe
+  if (tipo !== 'edicion') {
+    setTimeout(() => el.style.display = 'none', 5000);
+  }
 }
 
 function ocultarAlertas() {
