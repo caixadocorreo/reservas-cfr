@@ -682,6 +682,9 @@
   .estado-badge.pendente { background: #ffe0b2; color: #e65100; }
   .estado-badge.aprobada { background: #c8e6c9; color: #1b5e20; }
   .estado-badge.rexeitada { background: #ffcdd2; color: #b71c1c; }
+  .estado-badge.substituída { background: #e0e0e0; color: #555; }
+  .evento.substituída { background: #e0e0e0; color: #555; }
+  .evento-semana.substituída { background: #e0e0e0; color: #555; border-left: 3px solid #999; }
 
   /* Filtros calendario */
   .cal-filtros {
@@ -995,6 +998,7 @@
     <!-- ALERTA GLOBAL -->
     <div class="alerta alerta-exito" id="alerta-exito">✓ Reserva enviada correctamente. Quedará pendente de aprobación.</div>
     <div class="alerta alerta-erro" id="alerta-erro">✗ Erro ao enviar a reserva. Inténtao de novo.</div>
+    <div class="alerta" id="alerta-edicion" style="background:#e8f4fc;color:#005f99;border:1.5px solid #b3d9ef">✏️ Editando reserva existente. A reserva anterior quedará marcada como Substituída.</div>
 
     <!-- ================================================
          PANEL CALENDARIO
@@ -1254,6 +1258,7 @@
             <div class="axuda-estado-item"><div class="axuda-cor" style="background:#ffe0b2;border:1px solid #f57c00"></div> Pendente de aprobación</div>
             <div class="axuda-estado-item"><div class="axuda-cor" style="background:#c8e6c9;border:1px solid #2e7d32"></div> Aprobada</div>
             <div class="axuda-estado-item"><div class="axuda-cor" style="background:#ffcdd2;border:1px solid #c62828"></div> Rexeitada</div>
+            <div class="axuda-estado-item"><div class="axuda-cor" style="background:#e0e0e0;border:1px solid #999"></div> Substituída (editada)</div>
           </div>
           <p><strong>Vistas dispoñibles:</strong></p>
           <ul style="margin:8px 0 8px 20px">
@@ -1274,6 +1279,7 @@
         </div>
         <div class="axuda-seccion-corpo">
           <p>O formulario adapta os pasos segundo o tipo de actividade seleccionado:</p>
+          <div class="axuda-nota">Para editar unha reserva <strong>Pendente</strong> propia, preme nela no calendario e usa o botón <strong>"✏️ Editar esta reserva"</strong>. A reserva orixinal quedará marcada como Substituída e pre-encherase o formulario cos datos existentes.</div>
           <table class="axuda-tabla">
             <tr><th>Tipo</th><th>Catálogo</th><th>Sesións múltiples</th></tr>
             <tr><td>AFI</td><td>Si</td><td>Si</td></tr>
@@ -2100,16 +2106,21 @@ function verDetalle(id) {
   const r = reservas.find(x => x.id === id);
   if (!r) return;
   const [a,m,d] = r.data.split('-');
+  const podeEditar = r.estado === 'Pendente' && r.asesora === usuarioActual;
   document.getElementById('modal-corpo').innerHTML = `
     <div class="modal-fila"><strong>Estado</strong><span><span class="estado-badge ${r.estado.toLowerCase()}">${r.estado}</span></span></div>
     <div class="modal-fila"><strong>Persoa</strong><span>${r.asesora}</span></div>
     <div class="modal-fila"><strong>Data</strong><span>${d}/${m}/${a} · ${r.turno} (${r.horaInicio} – ${r.horaFin})</span></div>
     <div class="modal-fila"><strong>Espazos</strong><span>${r.espazos}</span></div>
     <div class="modal-fila"><strong>Tipo</strong><span>${r.tipo}${r.codigo?' · '+r.codigo:''}${r.titulo?' — '+r.titulo:''}</span></div>
+    ${r.relator?`<div class="modal-fila"><strong>Relator/a(s)</strong><span>${r.relator}</span></div>`:''}
     ${r.recursos?`<div class="modal-fila"><strong>Recursos</strong><span>${r.recursos}</span></div>`:''}
     <div class="modal-fila"><strong>Pausa-café</strong><span>${r.cafe}</span></div>
     <div class="modal-fila"><strong>Mobilidade reducida</strong><span>${r.mobilidade}</span></div>
     ${r.observacions?`<div class="modal-fila"><strong>Observacións</strong><span>${r.observacions}</span></div>`:''}
+    ${podeEditar ? `<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gris-borde)">
+      <button class="btn btn-primario" onclick="editarReserva(${r.id})" style="width:100%">✏️ Editar esta reserva</button>
+    </div>` : ''}
   `;
   document.getElementById('modal-overlay').classList.add('aberto');
 }
@@ -2204,6 +2215,78 @@ function copiarSemana() {
   });
 }
 
+async function editarReserva(id) {
+  const r = reservas.find(x => x.id === id);
+  if (!r) return;
+
+  // Pechar modal
+  document.getElementById('modal-overlay').classList.remove('aberto');
+
+  // Marcar a reserva antiga como Substituída no Sheet
+  if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
+    try {
+      await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ _accion: 'substituir', timestamp: r.timestamp }),
+      });
+    } catch(e) { console.error('Erro ao marcar como substituída:', e); }
+  }
+  // Actualizar localmente
+  r.estado = 'Substituída';
+  renderCalendario();
+
+  // Ir ao formulario e pre-encher
+  mostrarPanel('nova-reserva');
+
+  // Agardar a que o DOM estea listo
+  setTimeout(() => {
+    // Tipo
+    const selTipo = document.getElementById('res-tipo');
+    selTipo.value = r.tipo || '';
+    actualizarTipoActividade();
+
+    setTimeout(() => {
+      // Código e título
+      if (document.getElementById('res-codigo')) document.getElementById('res-codigo').value = r.codigo || '';
+      if (document.getElementById('res-titulo')) document.getElementById('res-titulo').value = r.titulo || '';
+      if (document.getElementById('res-relator')) document.getElementById('res-relator').value = r.relator || '';
+
+      // Data e horario (para sesión única)
+      const tiposMulti = ['AFI', 'Formación PFPP'];
+      if (!tiposMulti.includes(r.tipo)) {
+        document.getElementById('res-data').value = r.data || '';
+        document.getElementById('res-turno').value = r.turno || '';
+        document.getElementById('res-hora-inicio').value = r.horaInicio || '';
+        document.getElementById('res-hora-fin').value = r.horaFin || '';
+        // Café
+        document.querySelectorAll('input[name="cafe"]').forEach(i => {
+          i.checked = i.value === r.cafe;
+        });
+      }
+
+      // Mobilidade
+      document.querySelectorAll('input[name="mobilidade"]').forEach(i => {
+        i.checked = i.value === r.mobilidade;
+      });
+      actualizarEspazosDisponibles();
+
+      // Espazos
+      espazosSeleccionados = r.espazos ? r.espazos.split(';').map(e => e.trim()).filter(Boolean) : [];
+      renderEspazosSeleccionados();
+
+      // Observacións
+      document.getElementById('res-observacions').value = r.observacions || '';
+
+      // Actualizar radios
+      actualizarRadios();
+
+      // Aviso ao usuario
+      mostrarAlerta('edicion');
+
+    }, 200);
+  }, 100);
+}
+
 function pecharmModal(e) {
   if (e.target === document.getElementById('modal-overlay'))
     document.getElementById('modal-overlay').classList.remove('aberto');
@@ -2236,6 +2319,7 @@ function mostrarAlerta(tipo) {
 function ocultarAlertas() {
   document.getElementById('alerta-exito').style.display = 'none';
   document.getElementById('alerta-erro').style.display = 'none';
+  document.getElementById('alerta-edicion').style.display = 'none';
 }
 </script>
 </body>
