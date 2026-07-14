@@ -897,9 +897,52 @@
     ================================================ -->
     <div id="panel-nova-reserva" class="panel">
 
+      <!-- Paso 3: Actividade -->
+      <div class="form-card">
+        <h3>1. Tipo de actividade</h3>
+        <div class="form-grid" style="margin-bottom:16px">
+          <div class="campo">
+            <label>Tipo *</label>
+            <select id="res-tipo" onchange="actualizarTipoActividade()">
+              <option value="">Selecciona...</option>
+              <option value="AFI">AFI</option>
+              <option value="Formación PFPP">Formación PFPP</option>
+              <option value="Reunión interna">Reunión interna</option>
+              <option value="Videoconferencia">Videoconferencia</option>
+              <option value="Docencia compartida PFPP">Docencia compartida PFPP</option>
+              <option value="Docencia compartida AFC">Docencia compartida AFC</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Catálogo (AFI / PFPP) -->
+        <div id="campos-catalogo" style="display:none;margin-bottom:16px">
+          <div class="campo">
+            <label>Seleccionar do catálogo <span style="font-weight:400;color:#888">(opcional — auto-enche código e título)</span></label>
+            <select id="res-catalogo" onchange="seleccionarCatalogo()">
+              <option value="">Selecciona unha actividade...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Campos código, título -->
+        <div id="campos-formacion" style="display:none">
+          <div class="form-grid">
+            <div class="campo">
+              <label>Código da actividade</label>
+              <input type="text" id="res-codigo" placeholder="Ex: V2601001">
+            </div>
+            <div class="campo">
+              <label>Título da actividade</label>
+              <input type="text" id="res-titulo" placeholder="Título completo">
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Paso 1: Data e turno -->
       <div class="form-card">
-        <h3>1. Data e horario</h3>
+        <h3>2. Data e horario</h3>
         <p id="aviso-multisesion" style="display:none;font-size:13px;color:#007bc4;background:#e8f4fc;padding:8px 12px;border-radius:6px;margin-bottom:14px">
           ℹ️ Para AFI e Formación PFPP, o horario introdúcese por sesión no paso 3b.
         </p>
@@ -945,7 +988,7 @@
 
       <!-- Paso 2: Accesibilidade e espazos -->
       <div class="form-card">
-        <h3>2. Espazos</h3>
+        <h3>3. Espazos</h3>
         <div class="campo" style="margin-bottom:16px">
           <label>Hai persoas asistentes con mobilidade reducida?</label>
           <div class="radio-grupo" style="margin-top:4px">
@@ -969,52 +1012,9 @@
         </div>
       </div>
 
-      <!-- Paso 3: Actividade -->
-      <div class="form-card">
-        <h3>3. Tipo de actividade</h3>
-        <div class="form-grid" style="margin-bottom:16px">
-          <div class="campo">
-            <label>Tipo *</label>
-            <select id="res-tipo" onchange="actualizarTipoActividade()">
-              <option value="">Selecciona...</option>
-              <option value="AFI">AFI</option>
-              <option value="Formación PFPP">Formación PFPP</option>
-              <option value="Reunión interna">Reunión interna</option>
-              <option value="Videoconferencia">Videoconferencia</option>
-              <option value="Docencia compartida PFPP">Docencia compartida PFPP</option>
-              <option value="Docencia compartida AFC">Docencia compartida AFC</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Catálogo (AFI / PFPP) -->
-        <div id="campos-catalogo" style="display:none;margin-bottom:16px">
-          <div class="campo">
-            <label>Seleccionar do catálogo <span style="font-weight:400;color:#888">(opcional — auto-enche código e título)</span></label>
-            <select id="res-catalogo" onchange="seleccionarCatalogo()">
-              <option value="">Selecciona unha actividade...</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Campos código, título -->
-        <div id="campos-formacion" style="display:none">
-          <div class="form-grid">
-            <div class="campo">
-              <label>Código da actividade</label>
-              <input type="text" id="res-codigo" placeholder="Ex: V2601001">
-            </div>
-            <div class="campo">
-              <label>Título da actividade</label>
-              <input type="text" id="res-titulo" placeholder="Título completo">
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Paso 3b: Sesións -->
       <div class="form-card" id="card-sesions" style="display:none">
-        <h3>3b. Sesións</h3>
+        <h3>4. Sesións</h3>
         <p style="font-size:13px;color:#666;margin-bottom:14px">Engade unha fila por cada sesión. O relator/a e os recursos poden variar por sesión.</p>
         <div style="overflow-x:auto">
           <table class="sesions-tabla" id="tabla-sesions">
@@ -1045,7 +1045,7 @@
 
       <!-- Paso 5: Observacións e envío -->
       <div class="form-card">
-        <h3>4. Observacións</h3>
+        <h3>5. Observacións</h3>
         <div class="campo">
           <textarea id="res-observacions" placeholder="Calquera información adicional relevante..."></textarea>
         </div>
