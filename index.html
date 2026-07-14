@@ -1830,7 +1830,7 @@ async function enviarReserva() {
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
     for (const payload of payloads) {
       try {
-        await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+        await fetch(APPS_SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       } catch(e) { console.error('Erro ao enviar:', e); }
     }
   }
@@ -2227,6 +2227,7 @@ async function editarReserva(id) {
     try {
       await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           _accion: 'substituir',
           asesora: r.asesora,
