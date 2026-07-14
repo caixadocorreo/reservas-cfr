@@ -1830,8 +1830,7 @@ async function enviarReserva() {
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
     for (const payload of payloads) {
       try {
-        const fd = new FormData(); fd.append('data', JSON.stringify(payload));
-        await fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: fd });
+        await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
       } catch(e) { console.error('Erro ao enviar:', e); }
     }
   }
@@ -2226,17 +2225,14 @@ async function editarReserva(id) {
   // Marcar a reserva antiga como Substituída no Sheet
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
     try {
-      const formData = new FormData();
-      formData.append('data', JSON.stringify({
-        _accion: 'substituir',
-        asesora: r.asesora,
-        espazos: r.espazos,
-        horaInicio: r.horaInicio,
-      }));
       await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors',
-        body: formData,
+        body: JSON.stringify({
+          _accion: 'substituir',
+          asesora: r.asesora,
+          espazos: r.espazos,
+          horaInicio: r.horaInicio,
+        }),
       });
     } catch(e) { console.error('Erro ao marcar como substituída:', e); }
   }
