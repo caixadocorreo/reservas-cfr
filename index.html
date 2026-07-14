@@ -696,6 +696,69 @@
     box-shadow: var(--sombra);
   }
 
+  /* Táboa de sesións múltiples */
+  .sesions-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+  .sesions-tabla th {
+    background: var(--azul);
+    color: white;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .sesions-tabla td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--gris-borde);
+    vertical-align: middle;
+  }
+  .sesions-tabla tr:hover td { background: var(--azul-claro); }
+  .sesions-tabla input, .sesions-tabla select {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .sesions-tabla input:focus, .sesions-tabla select:focus {
+    outline: none;
+    border-color: var(--azul);
+  }
+  .btn-eliminar-sesion {
+    background: none;
+    border: none;
+    color: var(--vermello);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+  .btn-eliminar-sesion:hover { background: var(--vermello-claro); }
+  .btn-engadir-sesion {
+    background: none;
+    border: 1.5px dashed var(--azul);
+    color: var(--azul);
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.2s;
+  }
+  .btn-engadir-sesion:hover { background: var(--azul-claro); }
+  .sesions-conta {
+    font-size: 12px;
+    color: var(--gris-texto);
+    margin-top: 6px;
+  }
+
   /* Cadro CSV para copiar */
   .csv-box {
     background: #1e1e1e;
@@ -909,7 +972,8 @@
             <label>Tipo *</label>
             <select id="res-tipo" onchange="actualizarTipoActividade()">
               <option value="">Selecciona...</option>
-              <option value="Formación">Formación (con código)</option>
+              <option value="AFI">AFI</option>
+              <option value="Formación PFPP">Formación PFPP</option>
               <option value="Reunión interna">Reunión interna</option>
               <option value="Videoconferencia">Videoconferencia</option>
               <option value="Docencia compartida PFPP">Docencia compartida PFPP</option>
@@ -917,35 +981,66 @@
             </select>
           </div>
         </div>
+
+        <!-- Catálogo (AFI / PFPP) -->
+        <div id="campos-catalogo" style="display:none;margin-bottom:16px">
+          <div class="campo">
+            <label>Seleccionar do catálogo <span style="font-weight:400;color:#888">(opcional — auto-enche código e título)</span></label>
+            <select id="res-catalogo" onchange="seleccionarCatalogo()">
+              <option value="">Selecciona unha actividade...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Campos código, título -->
         <div id="campos-formacion" style="display:none">
           <div class="form-grid">
             <div class="campo">
               <label>Código da actividade</label>
-              <input type="text" id="res-codigo" placeholder="Ex: V2501027">
+              <input type="text" id="res-codigo" placeholder="Ex: V2601001">
             </div>
             <div class="campo">
               <label>Título da actividade</label>
               <input type="text" id="res-titulo" placeholder="Título completo">
             </div>
           </div>
-          <div class="form-grid un" style="margin-top:14px">
-            <div class="campo">
-              <label>Relator/a(s) <span style="font-weight:400;color:#888">(se hai máis dunha persoa, separar por ;)</span></label>
-              <input type="text" id="res-relator" placeholder="Ex: Ana García; Xosé Fraga">
-            </div>
-          </div>
         </div>
       </div>
 
-      <!-- Paso 4: Recursos -->
-      <div class="form-card">
+      <!-- Paso 3b: Sesións -->
+      <div class="form-card" id="card-sesions" style="display:none">
+        <h3>3b. Sesións</h3>
+        <p style="font-size:13px;color:#666;margin-bottom:14px">Engade unha fila por cada sesión. O relator/a e os recursos poden variar por sesión.</p>
+        <div style="overflow-x:auto">
+          <table class="sesions-tabla" id="tabla-sesions">
+            <thead>
+              <tr>
+                <th>Data *</th>
+                <th>Hora inicio *</th>
+                <th>Hora fin *</th>
+                <th>Relator/a(s)</th>
+                <th>Recursos</th>
+                <th>Café</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="sesions-body">
+            </tbody>
+          </table>
+        </div>
+        <button class="btn-engadir-sesion" onclick="engadirSesion()">+ Engadir sesión</button>
+        <div class="sesions-conta" id="sesions-conta"></div>
+      </div>
+
+      <!-- Paso 4: Recursos (só para non-multisesión) -->
+      <div class="form-card" id="card-recursos-global" style="display:none">
         <h3>4. Recursos necesarios</h3>
         <div class="recursos-grid" id="recursos-lista"></div>
       </div>
 
       <!-- Paso 5: Observacións e envío -->
       <div class="form-card">
-        <h3>5. Observacións</h3>
+        <h3>4. Observacións</h3>
         <div class="campo">
           <textarea id="res-observacions" placeholder="Calquera información adicional relevante..."></textarea>
         </div>
@@ -1011,6 +1106,8 @@
 // ============================================================
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyy4O0ohgbt9qwk33lvsrUpDVn1cPkivEMuhxfccDG7vfG7DdebPUBgE2_xi9PSU9k6eQ/exec';
 const PIN_CORRECTO = 'CFR2026';
+const CSV_CATALOGO_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRINyqnBcwGB8wq4tHUJuekaG5gPvPSXViSxGc88xeWjBbwO9WPBZNp8mJUGHHJeHR4EdsDBJhSpWO9/pub?gid=0&single=true&output=csv';
+let CATALOGO = [];
 const CSV_RECURSOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1567420509&single=true&output=csv';
 const CSV_RESERVAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=0&single=true&output=csv'; // Cambiar por PIN real
 
@@ -1072,6 +1169,27 @@ document.getElementById('login-asesora').addEventListener('keydown', e => { if (
 // ============================================================
 // INICIO
 // ============================================================
+async function cargarCatalogo() {
+  if (CSV_CATALOGO_URL === 'PENDENTE_URL_CATALOGO') return;
+  try {
+    const resp = await fetch(CSV_CATALOGO_URL);
+    const texto = await resp.text();
+    const liñas = texto.trim().split('\n').slice(1);
+    CATALOGO = liñas.filter(l => l.trim()).map(l => {
+      const cols = [];
+      let cur='', inQ=false;
+      for (let i=0;i<l.length;i++){
+        const c=l[i];
+        if(c==='"'){inQ=!inQ;}
+        else if(c===','&&!inQ){cols.push(cur.trim());cur='';}
+        else{cur+=c;}
+      }
+      cols.push(cur.trim());
+      return { tipo: cols[0]||'', codigo: cols[1]||'', titulo: cols[2]||'', activo: (cols[3]||'').toLowerCase() };
+    }).filter(r => r.codigo && r.activo !== 'non' && r.activo !== 'no');
+  } catch(e) { console.error('Erro ao cargar catálogo:', e); }
+}
+
 async function cargarRecursos() {
   if (CSV_RECURSOS_URL === 'PENDENTE_URL_RECURSOS') {
     renderRecursos();
@@ -1102,6 +1220,7 @@ async function cargarRecursos() {
 }
 
 function iniciar() {
+  cargarCatalogo();
   cargarRecursos();
   actualizarEspazosDisponibles();
   popularFiltroEspazo();
@@ -1114,8 +1233,11 @@ function iniciar() {
   document.getElementById('btn-exportar-wrap').style.display = 'block';
 }
 
+let RECURSOS_ACTUAIS = [...RECURSOS];
+
 function renderRecursos(lista) {
   const items = lista || RECURSOS;
+  RECURSOS_ACTUAIS = items;
   const cont = document.getElementById('recursos-lista');
   cont.innerHTML = items.map(r => `
     <label class="recurso-check" onclick="this.classList.toggle('marcado')">
@@ -1149,9 +1271,98 @@ function actualizarRadios() {
   document.getElementById('lbl-mob-non').classList.toggle('seleccionado', mobVal === 'Non');
 }
 
+let sesionsMultiple = [];
+let contadorSesions = 0;
+
 function actualizarTipoActividade() {
   const tipo = document.getElementById('res-tipo').value;
-  document.getElementById('campos-formacion').style.display = tipo === 'Formación' ? 'block' : 'none';
+  const tiposConCodigo = ['AFI', 'Formación PFPP'];
+  const tiposConCatalogo = ['AFI', 'Formación PFPP'];
+  const tiposMultisesion = ['AFI', 'Formación PFPP'];
+
+  const tenCodigo = tiposConCodigo.includes(tipo);
+  const tenCatalogo = tiposConCatalogo.includes(tipo);
+  const esMultisesion = tiposMultisesion.includes(tipo);
+
+  document.getElementById('campos-formacion').style.display = tenCodigo ? 'block' : 'none';
+  document.getElementById('campos-catalogo').style.display = tenCatalogo ? 'block' : 'none';
+  document.getElementById('card-sesions').style.display = esMultisesion ? 'block' : 'none';
+  document.getElementById('card-recursos-global').style.display = !esMultisesion ? 'block' : 'none';
+
+  // Popular catálogo filtrado por tipo
+  if (tenCatalogo) {
+    const sel = document.getElementById('res-catalogo');
+    const filtrado = CATALOGO.filter(c => c.tipo === tipo);
+    sel.innerHTML = '<option value="">Selecciona unha actividade...</option>' +
+      filtrado.map(c => `<option value="${c.codigo}|||${c.titulo}">${c.codigo} — ${c.titulo}</option>`).join('');
+  }
+
+  // Iniciar con unha sesión baleira se é multisesión
+  if (esMultisesion && sesionsMultiple.length === 0) {
+    engadirSesion();
+  }
+}
+
+function seleccionarCatalogo() {
+  const val = document.getElementById('res-catalogo').value;
+  if (!val) return;
+  const [cod, tit] = val.split('|||');
+  document.getElementById('res-codigo').value = cod;
+  document.getElementById('res-titulo').value = tit;
+}
+
+function engadirSesion() {
+  contadorSesions++;
+  const id = contadorSesions;
+  const recursos = RECURSOS_ACTUAIS.length > 0 ? RECURSOS_ACTUAIS : ['Carro 1 (21 portátiles)','Carro 2 (21 portátiles)','Carro 3 (30 portátiles)','Kit audiovisual (Radio)','Kit audiovisual (Vídeo)'];
+  const opcsRecursos = ['<option value="">Ningún</option>'].concat(recursos.map(r => `<option value="${r}">${r}</option>`)).join('');
+
+  const fila = document.createElement('tr');
+  fila.id = `sesion-fila-${id}`;
+  fila.innerHTML = `
+    <td><input type="date" id="ses-data-${id}"></td>
+    <td><input type="time" id="ses-hora-ini-${id}"></td>
+    <td><input type="time" id="ses-hora-fin-${id}"></td>
+    <td><input type="text" id="ses-relator-${id}" placeholder="Relator/a(s)"></td>
+    <td><select id="ses-recursos-${id}">${opcsRecursos}</select></td>
+    <td>
+      <select id="ses-cafe-${id}">
+        <option value="Non">Non</option>
+        <option value="Si">Si</option>
+      </select>
+    </td>
+    <td><button class="btn-eliminar-sesion" onclick="eliminarSesion(${id})" title="Eliminar">×</button></td>
+  `;
+  document.getElementById('sesions-body').appendChild(fila);
+  actualizarContaSesions();
+}
+
+function eliminarSesion(id) {
+  const fila = document.getElementById(`sesion-fila-${id}`);
+  if (fila) fila.remove();
+  actualizarContaSesions();
+}
+
+function actualizarContaSesions() {
+  const n = document.getElementById('sesions-body').querySelectorAll('tr').length;
+  document.getElementById('sesions-conta').textContent = n === 0 ? 'Non hai sesións engadidas' : `${n} sesión${n>1?'s':''} engadida${n>1?'s':''}`;
+}
+
+function lerSesions() {
+  const filas = document.getElementById('sesions-body').querySelectorAll('tr');
+  const resultado = [];
+  filas.forEach(fila => {
+    const id = fila.id.replace('sesion-fila-','');
+    resultado.push({
+      data: document.getElementById(`ses-data-${id}`)?.value || '',
+      horaInicio: document.getElementById(`ses-hora-ini-${id}`)?.value || '',
+      horaFin: document.getElementById(`ses-hora-fin-${id}`)?.value || '',
+      relator: document.getElementById(`ses-relator-${id}`)?.value || '',
+      recursos: document.getElementById(`ses-recursos-${id}`)?.value || '',
+      cafe: document.getElementById(`ses-cafe-${id}`)?.value || 'Non',
+    });
+  });
+  return resultado;
 }
 
 // ============================================================
@@ -1191,7 +1402,14 @@ function previsualizar() {
   const cafe = document.querySelector('input[name="cafe"]:checked')?.value;
   const mob = document.querySelector('input[name="mobilidade"]:checked')?.value;
 
-  if (!data || !turno || !horaIni || !horaFin || !tipo || espazosSeleccionados.length === 0) {
+  const tiposMultisesion = ['AFI', 'Formación PFPP'];
+  const esMultisesion = tiposMultisesion.includes(tipo);
+
+  if (!tipo || espazosSeleccionados.length === 0) {
+    alert('Por favor, enche todos os campos obrigatorios (*).');
+    return;
+  }
+  if (!esMultisesion && (!data || !turno || !horaIni || !horaFin)) {
     alert('Por favor, enche todos os campos obrigatorios (*).');
     return;
   }
@@ -1199,23 +1417,39 @@ function previsualizar() {
   const recursos = [...document.querySelectorAll('#recursos-lista input:checked')].map(i => i.value);
   const codigo = document.getElementById('res-codigo').value;
   const titulo = document.getElementById('res-titulo').value;
-  const relator = document.getElementById('res-relator').value;
+  const relator = document.getElementById('res-relator')?.value || '';
   const obs = document.getElementById('res-observacions').value;
+  const sesions = esMultisesion ? lerSesions() : [];
 
   const resumo = document.getElementById('resumo-contido');
   const [a,m,d] = data.split('-');
-  resumo.innerHTML = `
+  const meses2 = ['xaneiro','febreiro','marzo','abril','maio','xuño','xullo','agosto','setembro','outubro','novembro','decembro'];
+  let resumoHTML = `
     <div class="resumo-fila"><strong>Persoa:</strong><span>${usuarioActual}</span></div>
+    <div class="resumo-fila"><strong>Espazos:</strong><span>${espazosSeleccionados.join(', ')}</span></div>
+    <div class="resumo-fila"><strong>Mobilidade reducida:</strong><span>${mob}</span></div>
+    <div class="resumo-fila"><strong>Tipo:</strong><span>${tipo}${codigo ? ' · ' + codigo : ''}${titulo ? ' — ' + titulo : ''}</span></div>`;
+
+  if (esMultisesion) {
+    resumoHTML += `<div class="resumo-fila"><strong>Sesións:</strong><span>${sesions.length} sesión${sesions.length!==1?'s':''}</span></div>`;
+    sesions.forEach((s,i) => {
+      const [sa,sm,sd] = s.data.split('-');
+      resumoHTML += `<div class="resumo-fila" style="padding-left:16px;font-size:12px">
+        <strong>Sesión ${i+1}:</strong>
+        <span>${sd||'?'}/${sm||'?'}/${sa||'?'} · ${s.horaInicio||'?'}–${s.horaFin||'?'} · ${s.relator||'sen relator'} · Café: ${s.cafe}${s.recursos?' · '+s.recursos:''}</span>
+      </div>`;
+    });
+  } else {
+    const [a,m,d] = data.split('-');
+    resumoHTML += `
     <div class="resumo-fila"><strong>Data:</strong><span>${d}/${m}/${a}</span></div>
     <div class="resumo-fila"><strong>Turno:</strong><span>${turno} (${horaIni} – ${horaFin})</span></div>
     <div class="resumo-fila"><strong>Pausa-café:</strong><span>${cafe}</span></div>
-    <div class="resumo-fila"><strong>Mobilidade reducida:</strong><span>${mob}</span></div>
-    <div class="resumo-fila"><strong>Espazos:</strong><span>${espazosSeleccionados.join(', ')}</span></div>
-    <div class="resumo-fila"><strong>Tipo:</strong><span>${tipo}${codigo ? ' · ' + codigo : ''}${titulo ? ' — ' + titulo : ''}</span></div>
     ${relator ? `<div class="resumo-fila"><strong>Relator/a(s):</strong><span>${relator}</span></div>` : ''}
-    ${recursos.length ? `<div class="resumo-fila"><strong>Recursos:</strong><span>${recursos.join(', ')}</span></div>` : ''}
-    ${obs ? `<div class="resumo-fila"><strong>Observacións:</strong><span>${obs}</span></div>` : ''}
-  `;
+    ${recursos.length ? `<div class="resumo-fila"><strong>Recursos:</strong><span>${recursos.join(', ')}</span></div>` : ''}`;
+  }
+  resumoHTML += obs ? `<div class="resumo-fila"><strong>Observacións:</strong><span>${obs}</span></div>` : '';
+  resumo.innerHTML = resumoHTML;
   document.getElementById('resumo-box').style.display = 'block';
   document.getElementById('btn-enviar').style.display = 'inline-block';
 
@@ -1264,33 +1498,51 @@ async function enviarReserva() {
   const recursos = [...document.querySelectorAll('#recursos-lista input:checked')].map(i => i.value);
   const codigo = document.getElementById('res-codigo').value;
   const titulo = document.getElementById('res-titulo').value;
-  const relator = document.getElementById('res-relator').value;
+  const relator = document.getElementById('res-relator')?.value || '';
   const obs = document.getElementById('res-observacions').value;
+  const tiposMultisesion = ['AFI', 'Formación PFPP'];
+  const esMultisesion = tiposMultisesion.includes(tipo);
+  const sesions = esMultisesion ? lerSesions() : [];
 
-  const payload = {
-    asesora: usuarioActual,
-    data, turno, horaInicio: horaIni, horaFin,
-    espazos: espazosSeleccionados.join('; '),
-    tipo, codigo, titulo, relator,
-    recursos: recursos.join('; '),
-    cafe, mobilidade: mob,
-    observacions: obs,
-    estado: 'Pendente',
-    timestamp: new Date().toISOString(),
-  };
+  const payloads = [];
+  if (esMultisesion) {
+    sesions.forEach(s => {
+      payloads.push({
+        asesora: usuarioActual,
+        data: s.data,
+        turno: s.horaInicio && parseInt(s.horaInicio) < 14 ? 'Mañá' : 'Tarde',
+        horaInicio: s.horaInicio, horaFin: s.horaFin,
+        espazos: espazosSeleccionados.join('; '),
+        tipo, codigo, titulo, relator: s.relator,
+        recursos: s.recursos, cafe: s.cafe,
+        mobilidade: mob, observacions: obs,
+        estado: 'Pendente', timestamp: new Date().toISOString(),
+      });
+    });
+  } else {
+    payloads.push({
+      asesora: usuarioActual,
+      data, turno, horaInicio: horaIni, horaFin,
+      espazos: espazosSeleccionados.join('; '),
+      tipo, codigo, titulo, relator,
+      recursos: recursos.join('; '),
+      cafe, mobilidade: mob,
+      observacions: obs, estado: 'Pendente',
+      timestamp: new Date().toISOString(),
+    });
+  }
 
-  // Engadir localmente para visualización inmediata
-  reservas.push({ ...payload, id: Date.now() });
+  // Engadir localmente
+  payloads.forEach(p => reservas.push({ ...p, id: Date.now() + Math.random() }));
   renderCalendario();
 
-  // Enviar ao Apps Script (se está configurado)
+  // Enviar ao Apps Script
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
-    try {
-      await fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-    } catch(e) { console.error('Erro ao enviar:', e); }
+    for (const payload of payloads) {
+      try {
+        await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+      } catch(e) { console.error('Erro ao enviar:', e); }
+    }
   }
 
   mostrarAlerta('exito');
@@ -1307,7 +1559,12 @@ function limparFormulario() {
   document.getElementById('res-codigo').value = '';
   document.getElementById('res-titulo').value = '';
   document.getElementById('res-observacions').value = '';
-  document.getElementById('res-relator').value = '';
+  if (document.getElementById('res-relator')) document.getElementById('res-relator').value = '';
+  if (document.getElementById('res-catalogo')) document.getElementById('res-catalogo').value = '';
+  document.getElementById('sesions-body').innerHTML = '';
+  sesionsMultiple = [];
+  contadorSesions = 0;
+  actualizarContaSesions();
   document.querySelectorAll('input[name="cafe"]')[0].checked = true;
   document.querySelectorAll('input[name="mobilidade"]')[0].checked = true;
   document.querySelectorAll('#recursos-lista input').forEach(i => {
