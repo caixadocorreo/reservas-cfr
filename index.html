@@ -816,6 +816,94 @@
   /* =====================================================
      IMPRESIÓN / PDF
   ===================================================== */
+  /* =====================================================
+     PANEL DE AXUDA
+  ===================================================== */
+  .axuda-seccion {
+    background: white;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .axuda-seccion-cab {
+    background: var(--azul);
+    color: white;
+    padding: 12px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+  .axuda-seccion-cab:hover { background: var(--azul-escuro); }
+  .axuda-seccion-corpo {
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    display: none;
+  }
+  .axuda-seccion-corpo.aberto { display: block; }
+  .axuda-seccion-cab .icona-toggle { transition: transform 0.2s; }
+  .axuda-seccion-cab.aberto .icona-toggle { transform: rotate(180deg); }
+  .axuda-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+  }
+  .axuda-tabla th {
+    background: var(--azul-claro);
+    color: var(--azul-escuro);
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 700;
+  }
+  .axuda-tabla td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--gris-borde);
+  }
+  .axuda-tabla tr:last-child td { border-bottom: none; }
+  .axuda-tag {
+    display: inline-block;
+    background: #f0f4f8;
+    border: 1px solid var(--gris-borde);
+    border-radius: 4px;
+    padding: 1px 7px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #333;
+  }
+  .axuda-nota {
+    background: var(--azul-claro);
+    border-left: 3px solid var(--azul);
+    border-radius: 0 6px 6px 0;
+    padding: 10px 14px;
+    margin: 10px 0;
+    font-size: 13px;
+    color: var(--azul-escuro);
+  }
+  .axuda-estados {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+  }
+  .axuda-estado-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .axuda-cor {
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
   @media print {
     body { background: white; font-size: 11px; }
     header, nav.nav-tabs, .cal-controis, .lenda,
@@ -899,6 +987,7 @@
   <nav class="nav-tabs">
     <button class="nav-tab activo" onclick="mostrarPanel('calendario')">📅 Calendario</button>
     <button class="nav-tab" onclick="mostrarPanel('nova-reserva')">➕ Nova reserva</button>
+    <button class="nav-tab" onclick="mostrarPanel('axuda')">❓ Axuda</button>
   </nav>
 
   <main>
@@ -1133,6 +1222,123 @@
         <button class="btn btn-secundario" onclick="limparFormulario()">Limpar</button>
         <button class="btn btn-primario" onclick="previsualizar()">Previsualizar</button>
         <button class="btn btn-exito" id="btn-enviar" style="display:none" onclick="enviarReserva()">Confirmar e enviar</button>
+      </div>
+
+    </div>
+
+    <!-- ================================================
+         PANEL AXUDA
+    ================================================ -->
+    <div id="panel-axuda" class="panel">
+
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">
+          🔐 Acceso á aplicación <span class="icona-toggle">▾</span>
+        </div>
+        <div class="axuda-seccion-corpo">
+          <p>A aplicación está protexida por PIN. Na pantalla de inicio introduce:</p>
+          <ul style="margin:10px 0 10px 20px">
+            <li><strong>Código PIN</strong>: o PIN do centro</li>
+            <li><strong>Iniciais</strong>: 3 letras (1ª letra do nome + 1ª letra de cada apelido en maiúsculas). Ex: Ana Martínez García → <span class="axuda-tag">AMG</span></li>
+          </ul>
+          <div class="axuda-nota">A relación de iniciais e nomes reais só está accesible internamente no Google Sheet.</div>
+        </div>
+      </div>
+
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">
+          📅 Calendario de ocupación <span class="icona-toggle">▾</span>
+        </div>
+        <div class="axuda-seccion-corpo">
+          <div class="axuda-estados">
+            <div class="axuda-estado-item"><div class="axuda-cor" style="background:#ffe0b2;border:1px solid #f57c00"></div> Pendente de aprobación</div>
+            <div class="axuda-estado-item"><div class="axuda-cor" style="background:#c8e6c9;border:1px solid #2e7d32"></div> Aprobada</div>
+            <div class="axuda-estado-item"><div class="axuda-cor" style="background:#ffcdd2;border:1px solid #c62828"></div> Rexeitada</div>
+          </div>
+          <p><strong>Vistas dispoñibles:</strong></p>
+          <ul style="margin:8px 0 8px 20px">
+            <li><strong>Semana</strong>: luns a sábado, con navegación anterior/seguinte</li>
+            <li><strong>Mes</strong>: mes completo con navegación</li>
+            <li><strong>Set–Dec</strong>: vista cuadrimestral</li>
+            <li><strong>Xan–Mar</strong> e <strong>Abr–Xuñ</strong>: vistas trimestrais</li>
+          </ul>
+          <p>Os <strong>domingos</strong> aparecen en gris (non hai actividade). Os <strong>sábados</strong> en gris claro (actividade esporádica).</p>
+          <p style="margin-top:8px">O calendario <strong>actualízase cada 60 segundos</strong> automaticamente.</p>
+          <div class="axuda-nota">Preme en calquera evento para ver todos os seus detalles.</div>
+        </div>
+      </div>
+
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">
+          ➕ Nova reserva <span class="icona-toggle">▾</span>
+        </div>
+        <div class="axuda-seccion-corpo">
+          <p>O formulario adapta os pasos segundo o tipo de actividade seleccionado:</p>
+          <table class="axuda-tabla">
+            <tr><th>Tipo</th><th>Catálogo</th><th>Sesións múltiples</th></tr>
+            <tr><td>AFI</td><td>Si</td><td>Si</td></tr>
+            <tr><td>Formación PFPP</td><td>Si</td><td>Si</td></tr>
+            <tr><td>Reunión interna</td><td>Non</td><td>Non</td></tr>
+            <tr><td>Videoconferencia</td><td>Non</td><td>Non</td></tr>
+            <tr><td>Docencia compartida PFPP/AFC</td><td>Non</td><td>Non</td></tr>
+          </table>
+          <p><strong>Espazos accesibles</strong> (mobilidade reducida): Aula 0, Salón de actos, Polo A, Polo B.</p>
+          <p style="margin-top:8px"><strong>Relator/a(s)</strong>: se hai varias persoas, sepáraas con <span class="axuda-tag">;</span></p>
+          <div class="axuda-nota">Para AFI e Formación PFPP, engade unha fila na táboa de sesións por cada día de formación. O relator/a e os recursos poden variar por sesión.</div>
+        </div>
+      </div>
+
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">
+          ✅ Xestión de reservas (persoa responsable) <span class="icona-toggle">▾</span>
+        </div>
+        <div class="axuda-seccion-corpo">
+          <p>A persoa responsable xestiona as reservas directamente no <strong>Google Sheet</strong>:</p>
+          <ol style="margin:8px 0 8px 20px">
+            <li>Abre a folla <strong>Reservas</strong></li>
+            <li>Na columna <strong>P (Estado)</strong>, cambia o valor co despregable: <span class="axuda-tag">Pendente</span> → <span class="axuda-tag">Aprobada</span> ou <span class="axuda-tag">Rexeitada</span></li>
+            <li>Pódese modificar calquera campo antes de aprobar (espazo, horario...)</li>
+          </ol>
+          <div class="axuda-nota">Usa <strong>Datos → Crear un filtro</strong> no Sheet para ordenar e filtrar sen alterar os datos reais nin o CSV publicado.</div>
+        </div>
+      </div>
+
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">
+          📋 Exportar para a cartelería TV <span class="icona-toggle">▾</span>
+        </div>
+        <div class="axuda-seccion-corpo">
+          <p>Na vista <strong>Semana</strong>, o botón <strong>"📋 Exportar semana para Sesións"</strong> xera os datos das reservas <strong>Aprobadas</strong> de tipo <strong>AFI</strong> ou <strong>Formación PFPP</strong> no formato da folla de Sesións da cartelería TV:</p>
+          <p style="font-family:monospace;background:#f4f6f9;padding:8px 12px;border-radius:6px;font-size:12px;margin:10px 0">Data · Aula · Código · Título · Relator · HoraInicio · HoraFin</p>
+          <p>Xérase unha fila por espazo e ordenadas por data e hora. Usa o botón <strong>Copiar</strong> para pegar directamente na folla de Sesións.</p>
+        </div>
+      </div>
+
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">
+          🖨️ Descargar PDF <span class="icona-toggle">▾</span>
+        </div>
+        <div class="axuda-seccion-corpo">
+          <p>O botón <strong>"🖨️ Descargar PDF"</strong> está dispoñible en todas as vistas do calendario. Abre o diálogo de impresión do navegador en formato <strong>A4 apaisado</strong>.</p>
+          <p style="margin-top:8px">No PDF aparecen: aula, horario, iniciais da persoa asesora e código de actividade. As cores por estado consérvanse.</p>
+          <div class="axuda-nota">Para gardar como PDF, selecciona "Gardar como PDF" ou "Microsoft Print to PDF" como impresora.</div>
+        </div>
+      </div>
+
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">
+          🔧 Mantemento do sistema <span class="icona-toggle">▾</span>
+        </div>
+        <div class="axuda-seccion-corpo">
+          <table class="axuda-tabla">
+            <tr><th>Acción</th><th>Onde</th></tr>
+            <tr><td>Cambiar estado dunha reserva</td><td>Google Sheet → folla Reservas → columna P</td></tr>
+            <tr><td>Engadir recursos</td><td>Google Sheet → folla Recursos</td></tr>
+            <tr><td>Engadir actividades ao catálogo</td><td>Google Sheet → folla Catalogo</td></tr>
+            <tr><td>Cambiar o PIN</td><td>Editar <span class="axuda-tag">index.html</span> → liña <span class="axuda-tag">PIN_CORRECTO</span></td></tr>
+            <tr><td>Engadir novos espazos</td><td>Editar <span class="axuda-tag">index.html</span> → array <span class="axuda-tag">ESPAZOS_TODOS</span></td></tr>
+          </table>
+        </div>
       </div>
 
     </div>
@@ -1951,10 +2157,11 @@ function exportarSemana() {
   });
 
   // Filtrar reservas aprobadas de formación nesa semana
+  const tiposFormacion = ['AFI', 'Formación PFPP', 'Formación'];
   const seleccionadas = reservas.filter(r =>
     datasSemana.includes(r.data) &&
     r.estado === 'Aprobada' &&
-    r.tipo === 'Formación'
+    tiposFormacion.includes(r.tipo)
   );
 
   const aviso = document.getElementById('exportar-aviso');
@@ -2009,9 +2216,15 @@ function mostrarPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('activo'));
   document.getElementById('panel-' + id).classList.add('activo');
-  const idx = ['calendario','nova-reserva'].indexOf(id);
+  const idx = ['calendario','nova-reserva','axuda'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx]?.classList.add('activo');
   ocultarAlertas();
+}
+
+function toggleAxuda(cab) {
+  cab.classList.toggle('aberto');
+  const corpo = cab.nextElementSibling;
+  corpo.classList.toggle('aberto');
 }
 
 function mostrarAlerta(tipo) {
