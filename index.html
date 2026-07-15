@@ -2250,6 +2250,8 @@ async function editarReserva(id) {
           filaNum: r.filaNum,
         }),
       });
+      // Agarda 1 segundo antes de enviar a nova reserva
+      await new Promise(res => setTimeout(res, 1000));
     } catch(e) { console.error('Erro ao marcar como substituída:', e); }
   }
   // Actualizar localmente
