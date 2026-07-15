@@ -1832,10 +1832,12 @@ async function enviarReserva() {
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
     for (const payload of payloads) {
       try {
+        const params = new URLSearchParams();
+        Object.keys(payload).forEach(k => params.append(k, payload[k] || ''));
         await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
-          body: JSON.stringify(payload),
+          body: params,
         });
       } catch(e) { console.error('Erro ao enviar:', e); }
     }
