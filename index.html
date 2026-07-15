@@ -1532,10 +1532,6 @@ async function enviarReserva() {
     });
   }
 
-  // Engadir localmente
-  payloads.forEach(p => reservas.push({ ...p, id: Date.now() + Math.random() }));
-  renderCalendario();
-
   // Enviar ao Apps Script
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
     for (const payload of payloads) {
