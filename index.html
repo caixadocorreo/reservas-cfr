@@ -1622,6 +1622,7 @@ async function cargarReservas() {
         filaNum:   cols[16] || '',
       };
     });
+    console.log('Reservas cargadas:', reservas.length, reservas.map(r => r.data));
     renderCalendario();
   } catch(e) {
     console.error('Erro ao cargar reservas:', e);
