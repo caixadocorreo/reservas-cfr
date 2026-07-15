@@ -1832,12 +1832,9 @@ async function enviarReserva() {
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
     for (const payload of payloads) {
       try {
-        const params = new URLSearchParams();
-        Object.keys(payload).forEach(k => params.append(k, payload[k] || ''));
         await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          mode: 'no-cors',
-          body: params,
+          body: JSON.stringify(payload),
         });
       } catch(e) { console.error('Erro ao enviar:', e); }
     }
@@ -1887,7 +1884,12 @@ async function cargarReservas() {
     const resp = await fetch(CSV_RESERVAS_URL);
     const texto = await resp.text();
     const liñas = texto.trim().split('\n').slice(1);
-    reservas = liñas.filter(l => l.trim()).map((liña, idx) => {
+    reservas = liñas.filter(l => {
+      if (!l.trim()) return false;
+      const primeirosCols = l.split(',');
+      // Ignorar filas baleiras (sen timestamp ou asesora)
+      return primeirosCols[1] && primeirosCols[1].trim() !== '';
+    }).map((liña, idx) => {
       const cols = [];
       let cur = '', inQ = false;
       for (let i = 0; i < liña.length; i++) {
