@@ -50,7 +50,7 @@ En todas as vistas aparece o botón **🖨️ Descargar PDF** que abre o diálog
 - Cores por estado conservadas
 
 ### Exportar semana para Sesións (cartelería TV)
-Na vista **Semana** aparece tamén o botón **📋 Exportar semana para Sesións**, que xera os datos das reservas Aprobadas de tipo AFI e Formación PFPP no formato da folla de Sesións da cartelería TV, listo para copiar e pegar.
+Na vista **Semana** aparece tamén o botón **📋 Exportar semana para Sesións**, que abre unha xanela cos datos tabulados das reservas Aprobadas da semana seleccionada, listos para copiar (botón **Copiar**) e pegar na folla de Sesións da cartelería TV.
 
 ---
 
@@ -104,7 +104,7 @@ Táboa onde se engade unha fila por cada día de formación:
 | Recursos | Recurso necesario ese día |
 | Café | Si ou Non para esa sesión |
 
-Botón **"+ Engadir sesión"** para ir completando. Ao enviar, xérase unha fila no Sheet por cada sesión.
+Botón **"+ Engadir sesión"** para ir completando. Ao enviar, xérase unha fila no Sheet por cada sesión (mediante unha chamada a un Google Apps Script). O campo Turno de cada sesión non se pide: calcúlase automaticamente a partir da hora de inicio (antes das 14:00 → Mañá; a partir das 14:00 → Tarde).
 
 ### Paso 4 — Recursos (só para tipos de sesión única)
 Selección de recursos. A lista cárgase desde a folla `Recursos` do Sheet.
