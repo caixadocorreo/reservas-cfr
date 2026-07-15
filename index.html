@@ -1881,7 +1881,7 @@ function renderSemana(cont) {
       html += `<div class="semana-cel" style="${esSab?'background:#f5f5f5':''}">${evs.map(r =>
         `<div class="evento-semana ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})'>
           <div>${r.espazos.split(';')[0].trim()}</div>
-          <div style="font-weight:400;font-size:11px">${r.horaInicio}–${r.horaFin} · ${r.asesora}</div>
+          <div style="font-weight:400;font-size:11px">${r.horaInicio}–${r.horaFin} · ${r.asesora}${r.codigo?' · '+r.codigo:''}</div>
         </div>`
       ).join('')}</div>`;
     });
@@ -1931,8 +1931,8 @@ function renderMes(mesIdx, ano, rFiltradas, grande) {
     const altoCela = grande ? 'min-height:80px;' : '';
     celas += `<div class="mes-dia${outroMes?' outro-mes':''}${esHoxe?' hoxe':''}" style="${estilo}${altoCela}">
       <div class="mes-dia-num" style="${esDomingo?'color:#bbb':''}">${cur.getDate()}</div>
-      ${!esDomingo ? evs.map(r => `<div class="evento ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})' title="${r.espazos} · ${r.asesora}">
-        ${r.espazos.split(';')[0].trim().replace('Aula ','A').replace('Salón de actos','Salón').replace('Polo ','P')}
+      ${!esDomingo ? evs.map(r => `<div class="evento ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})' title="${r.espazos} · ${r.asesora} · ${r.horaInicio}–${r.horaFin}">
+        ${r.espazos.split(';')[0].trim().replace('Aula ','A').replace('Salón de actos','Sal').replace('Polo ','P')} ${r.asesora}${r.codigo?' '+r.codigo:''}
       </div>`).join('') : ''}
     </div>`;
     cur.setDate(cur.getDate() + 1);
