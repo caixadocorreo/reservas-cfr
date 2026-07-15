@@ -1996,10 +1996,11 @@ function exportarSemana() {
   });
 
   // Filtrar reservas aprobadas de formación nesa semana
+  const tiposFormacion = ['AFI', 'Formación PFPP', 'Formación'];
   const seleccionadas = reservas.filter(r =>
     datasSemana.includes(r.data) &&
     r.estado === 'Aprobada' &&
-    r.tipo === 'Formación'
+    tiposFormacion.includes(r.tipo)
   );
 
   const aviso = document.getElementById('exportar-aviso');
