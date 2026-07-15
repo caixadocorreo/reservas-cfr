@@ -799,6 +799,24 @@
   .btn-copiar:hover { background: var(--azul-escuro); }
   .btn-copiar.copiado { background: var(--verde); }
 
+  /* Panel de axuda */
+  .axuda-seccion { background:white;border-radius:var(--radio);box-shadow:var(--sombra);margin-bottom:16px;overflow:hidden; }
+  .axuda-seccion-cab { background:var(--azul);color:white;padding:12px 20px;font-size:15px;font-weight:700;cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none; }
+  .axuda-seccion-cab:hover { background:var(--azul-escuro); }
+  .axuda-seccion-corpo { padding:20px;font-size:14px;line-height:1.6;color:#333;display:none; }
+  .axuda-seccion-corpo.aberto { display:block; }
+  .axuda-seccion-cab .icona-toggle { transition:transform 0.2s; }
+  .axuda-seccion-cab.aberto .icona-toggle { transform:rotate(180deg); }
+  .axuda-tabla { width:100%;border-collapse:collapse;margin:12px 0;font-size:13px; }
+  .axuda-tabla th { background:var(--azul-claro);color:var(--azul-escuro);padding:8px 12px;text-align:left;font-weight:700; }
+  .axuda-tabla td { padding:7px 12px;border-bottom:1px solid var(--gris-borde); }
+  .axuda-tabla tr:last-child td { border-bottom:none; }
+  .axuda-tag { display:inline-block;background:#f0f4f8;border:1px solid var(--gris-borde);border-radius:4px;padding:1px 7px;font-family:monospace;font-size:12px;color:#333; }
+  .axuda-nota { background:var(--azul-claro);border-left:3px solid var(--azul);border-radius:0 6px 6px 0;padding:10px 14px;margin:10px 0;font-size:13px;color:var(--azul-escuro); }
+  .axuda-estados { display:flex;gap:16px;flex-wrap:wrap;margin:10px 0; }
+  .axuda-estado-item { display:flex;align-items:center;gap:8px;font-size:13px; }
+  .axuda-cor { width:16px;height:16px;border-radius:3px;flex-shrink:0; }
+
   @media (max-width: 640px) {
     .form-grid { grid-template-columns: 1fr; }
     .form-grid.tres { grid-template-columns: 1fr; }
@@ -838,6 +856,7 @@
   <nav class="nav-tabs">
     <button class="nav-tab activo" onclick="mostrarPanel('calendario')">📅 Calendario</button>
     <button class="nav-tab" onclick="mostrarPanel('nova-reserva')">➕ Nova reserva</button>
+    <button class="nav-tab" onclick="mostrarPanel('axuda')">❓ Axuda</button>
   </nav>
 
   <main>
@@ -897,76 +916,9 @@
     ================================================ -->
     <div id="panel-nova-reserva" class="panel">
 
-      <!-- Paso 1: Data e turno -->
-      <div class="form-card">
-        <h3>1. Data e horario</h3>
-        <div class="form-grid tres">
-          <div class="campo">
-            <label>Data *</label>
-            <input type="date" id="res-data">
-          </div>
-          <div class="campo">
-            <label>Turno *</label>
-            <select id="res-turno">
-              <option value="">Selecciona...</option>
-              <option value="Mañá">Mañá</option>
-              <option value="Tarde">Tarde</option>
-            </select>
-          </div>
-          <div class="campo"></div>
-        </div>
-        <div class="form-grid tres" style="margin-top:14px">
-          <div class="campo">
-            <label>Hora de inicio *</label>
-            <input type="time" id="res-hora-inicio">
-          </div>
-          <div class="campo">
-            <label>Hora de fin *</label>
-            <input type="time" id="res-hora-fin">
-          </div>
-          <div class="campo">
-            <label>Pausa-café</label>
-            <div class="radio-grupo" style="margin-top:4px">
-              <label class="radio-opcion" id="lbl-cafe-non">
-                <input type="radio" name="cafe" value="Non" checked onchange="actualizarRadios()"> Non
-              </label>
-              <label class="radio-opcion" id="lbl-cafe-si">
-                <input type="radio" name="cafe" value="Si" onchange="actualizarRadios()"> Si
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Paso 2: Accesibilidade e espazos -->
-      <div class="form-card">
-        <h3>2. Espazos</h3>
-        <div class="campo" style="margin-bottom:16px">
-          <label>Hai persoas asistentes con mobilidade reducida?</label>
-          <div class="radio-grupo" style="margin-top:4px">
-            <label class="radio-opcion" id="lbl-mob-non">
-              <input type="radio" name="mobilidade" value="Non" checked onchange="actualizarEspazosDisponibles()"> Non
-            </label>
-            <label class="radio-opcion" id="lbl-mob-si">
-              <input type="radio" name="mobilidade" value="Si" onchange="actualizarEspazosDisponibles()"> Si (só planta baixa)
-            </label>
-          </div>
-        </div>
-        <div class="campo">
-          <label>Espazos solicitados *</label>
-          <div class="espazos-lista" id="espazos-seleccionados"></div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-            <select id="espazo-selector" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:6px;font-size:14px;background:white">
-              <option value="">Selecciona un espazo...</option>
-            </select>
-            <button class="btn-engadir-espazo" onclick="engadirEspazo()">+ Engadir</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Paso 3: Actividade -->
       <div class="form-card">
-        <h3>3. Tipo de actividade</h3>
+        <h3>1. Tipo de actividade</h3>
         <div class="form-grid" style="margin-bottom:16px">
           <div class="campo">
             <label>Tipo *</label>
@@ -1007,9 +959,76 @@
         </div>
       </div>
 
+      <!-- Paso 1: Data e turno -->
+      <div class="form-card">
+        <h3>2. Data e horario</h3>
+        <div class="form-grid tres">
+          <div class="campo">
+            <label>Data *</label>
+            <input type="date" id="res-data">
+          </div>
+          <div class="campo">
+            <label>Turno *</label>
+            <select id="res-turno">
+              <option value="">Selecciona...</option>
+              <option value="Mañá">Mañá</option>
+              <option value="Tarde">Tarde</option>
+            </select>
+          </div>
+          <div class="campo"></div>
+        </div>
+        <div class="form-grid tres" style="margin-top:14px">
+          <div class="campo">
+            <label>Hora de inicio *</label>
+            <input type="time" id="res-hora-inicio">
+          </div>
+          <div class="campo">
+            <label>Hora de fin *</label>
+            <input type="time" id="res-hora-fin">
+          </div>
+          <div class="campo">
+            <label>Pausa-café</label>
+            <div class="radio-grupo" style="margin-top:4px">
+              <label class="radio-opcion" id="lbl-cafe-non">
+                <input type="radio" name="cafe" value="Non" checked onchange="actualizarRadios()"> Non
+              </label>
+              <label class="radio-opcion" id="lbl-cafe-si">
+                <input type="radio" name="cafe" value="Si" onchange="actualizarRadios()"> Si
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 2: Accesibilidade e espazos -->
+      <div class="form-card">
+        <h3>3. Espazos</h3>
+        <div class="campo" style="margin-bottom:16px">
+          <label>Hai persoas asistentes con mobilidade reducida?</label>
+          <div class="radio-grupo" style="margin-top:4px">
+            <label class="radio-opcion" id="lbl-mob-non">
+              <input type="radio" name="mobilidade" value="Non" checked onchange="actualizarEspazosDisponibles()"> Non
+            </label>
+            <label class="radio-opcion" id="lbl-mob-si">
+              <input type="radio" name="mobilidade" value="Si" onchange="actualizarEspazosDisponibles()"> Si (só planta baixa)
+            </label>
+          </div>
+        </div>
+        <div class="campo">
+          <label>Espazos solicitados *</label>
+          <div class="espazos-lista" id="espazos-seleccionados"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+            <select id="espazo-selector" style="padding:8px 12px;border:1.5px solid var(--gris-borde);border-radius:6px;font-size:14px;background:white">
+              <option value="">Selecciona un espazo...</option>
+            </select>
+            <button class="btn-engadir-espazo" onclick="engadirEspazo()">+ Engadir</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Paso 3b: Sesións -->
       <div class="form-card" id="card-sesions" style="display:none">
-        <h3>3b. Sesións</h3>
+        <h3>4. Sesións</h3>
         <p style="font-size:13px;color:#666;margin-bottom:14px">Engade unha fila por cada sesión. O relator/a e os recursos poden variar por sesión.</p>
         <div style="overflow-x:auto">
           <table class="sesions-tabla" id="tabla-sesions">
@@ -1040,7 +1059,7 @@
 
       <!-- Paso 5: Observacións e envío -->
       <div class="form-card">
-        <h3>4. Observacións</h3>
+        <h3>5. Observacións</h3>
         <div class="campo">
           <textarea id="res-observacions" placeholder="Calquera información adicional relevante..."></textarea>
         </div>
@@ -1060,6 +1079,74 @@
         <button class="btn btn-exito" id="btn-enviar" style="display:none" onclick="enviarReserva()">Confirmar e enviar</button>
       </div>
 
+    </div>
+
+    <!-- PANEL AXUDA -->
+    <div id="panel-axuda" class="panel">
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🔐 Acceso á aplicación <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <p>PIN do centro + iniciais (1ª letra nome + 1ª letra cada apelido en maiúsculas). Ex: Ana Martínez García → <span class="axuda-tag">AMG</span></p>
+        </div>
+      </div>
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">📅 Calendario <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <div class="axuda-estados">
+            <div class="axuda-estado-item"><div class="axuda-cor" style="background:#ffe0b2;border:1px solid #f57c00"></div> Pendente</div>
+            <div class="axuda-estado-item"><div class="axuda-cor" style="background:#c8e6c9;border:1px solid #2e7d32"></div> Aprobada</div>
+            <div class="axuda-estado-item"><div class="axuda-cor" style="background:#ffcdd2;border:1px solid #c62828"></div> Rexeitada</div>
+          </div>
+          <p>Vistas: <strong>Semana</strong> (luns–sábado), <strong>Mes</strong>, <strong>Set–Dec</strong>, <strong>Xan–Mar</strong>, <strong>Abr–Xuñ</strong>. Domingos en gris. Actualízase cada 60 segundos.</p>
+          <div class="axuda-nota">Preme en calquera evento para ver todos os seus detalles.</div>
+        </div>
+      </div>
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">➕ Nova reserva <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <table class="axuda-tabla">
+            <tr><th>Tipo</th><th>Catálogo</th><th>Sesións múltiples</th></tr>
+            <tr><td>AFI</td><td>Si</td><td>Si</td></tr>
+            <tr><td>Formación PFPP</td><td>Si</td><td>Si</td></tr>
+            <tr><td>Reunión interna / Videoconferencia / Docencias</td><td>Non</td><td>Non</td></tr>
+          </table>
+          <p>Espazos accesibles (mobilidade reducida): Aula 0, Salón de actos, Polo A, Polo B.</p>
+          <p style="margin-top:8px">Relator/a(s): separar por <span class="axuda-tag">;</span> se hai varias persoas.</p>
+          <div class="axuda-nota">Para AFI e Formación PFPP, engade unha fila por cada sesión na táboa. O relator/a e os recursos poden variar por sesión.</div>
+        </div>
+      </div>
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">✅ Xestión (persoa responsable) <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <p>Xestiona directamente no <strong>Google Sheet</strong> → columna <strong>P (Estado)</strong>: <span class="axuda-tag">Pendente</span> → <span class="axuda-tag">Aprobada</span> ou <span class="axuda-tag">Rexeitada</span>.</p>
+          <div class="axuda-nota">Usa <strong>Datos → Crear un filtro</strong> para ordenar e filtrar sen alterar os datos reais.</div>
+        </div>
+      </div>
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">📋 Exportar para cartelería TV <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <p>Na vista <strong>Semana</strong>, o botón <strong>"📋 Exportar semana para Sesións"</strong> xera os datos das reservas Aprobadas de tipo AFI e Formación PFPP, listo para copiar e pegar na folla de Sesións da cartelería TV.</p>
+        </div>
+      </div>
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🖨️ Descargar PDF <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <p>Dispoñible en todas as vistas. Abre o diálogo de impresión en formato A4 apaisado. Para gardar como PDF selecciona "Gardar como PDF" como impresora.</p>
+        </div>
+      </div>
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🔧 Mantemento <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <table class="axuda-tabla">
+            <tr><th>Acción</th><th>Onde</th></tr>
+            <tr><td>Cambiar estado dunha reserva</td><td>Sheet → Reservas → columna P</td></tr>
+            <tr><td>Engadir recursos</td><td>Sheet → Recursos</td></tr>
+            <tr><td>Engadir actividades ao catálogo</td><td>Sheet → Catalogo</td></tr>
+            <tr><td>Cambiar o PIN</td><td>index.html → liña <span class="axuda-tag">PIN_CORRECTO</span></td></tr>
+            <tr><td>Engadir novos espazos</td><td>index.html → array <span class="axuda-tag">ESPAZOS_TODOS</span></td></tr>
+          </table>
+        </div>
+      </div>
     </div>
 
   </main>
@@ -1900,9 +1987,14 @@ function mostrarPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('activo'));
   document.getElementById('panel-' + id).classList.add('activo');
-  const idx = ['calendario','nova-reserva'].indexOf(id);
+  const idx = ['calendario','nova-reserva','axuda'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx]?.classList.add('activo');
   ocultarAlertas();
+}
+
+function toggleAxuda(cab) {
+  cab.classList.toggle('aberto');
+  cab.nextElementSibling.classList.toggle('aberto');
 }
 
 function mostrarAlerta(tipo) {
