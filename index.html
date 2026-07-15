@@ -1807,6 +1807,7 @@ async function enviarReserva() {
         recursos: s.recursos, cafe: s.cafe,
         mobilidade: mob, observacions: obs,
         estado: 'Pendente', timestamp: new Date().toISOString(),
+        _accion: 'nova',
       });
     });
   } else {
@@ -1819,6 +1820,7 @@ async function enviarReserva() {
       cafe, mobilidade: mob,
       observacions: obs, estado: 'Pendente',
       timestamp: new Date().toISOString(),
+      _accion: 'nova',
     });
   }
 
