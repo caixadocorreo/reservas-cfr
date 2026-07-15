@@ -50,7 +50,9 @@ En todas as vistas aparece o botón **🖨️ Descargar PDF** que abre o diálog
 - Cores por estado conservadas
 
 ### Exportar semana para Sesións (cartelería TV)
-Na vista **Semana** aparece tamén o botón **📋 Exportar semana para Sesións**, que abre unha xanela cos datos tabulados das reservas Aprobadas da semana seleccionada, listos para copiar (botón **Copiar**) e pegar na folla de Sesións da cartelería TV.
+Na vista **Semana** aparece tamén o botón **📋 Exportar semana para Sesións**, que abre unha xanela cos datos tabulados das reservas Aprobadas (tipo AFI ou Formación PFPP) da semana efectivamente seleccionada nesa vista, listos para copiar (botón **Copiar**) e pegar na folla de Sesións da cartelería TV.
+
+**Importante**: a semana que se exporta é a que marcan as frechas ‹ › **dentro da propia vista Semana**, non a que se estea a ver noutra vista (Mes, Set–Dec, etc.). Se navegaches a outra semana na vista Semana e despois miraches o calendario noutra vista, ao volver a exportar seguirá a usar a última semana navegada na vista Semana. Antes de exportar, comproba que a data que aparece na cabeceira do calendario (ao carón das frechas) coincide coa semana que queres.
 
 ---
 
