@@ -1586,25 +1586,10 @@ function previsualizar() {
   resumoHTML += obs ? `<div class="resumo-fila"><strong>Observacións:</strong><span>${obs}</span></div>` : '';
   resumo.innerHTML = resumoHTML;
   document.getElementById('resumo-box').style.display = 'block';
-  document.getElementById('btn-enviar').style.display = 'inline-block';
-
-  // Xerar CSV para folla de Sesións (só para Formación)
-  const csvBox = document.getElementById('csv-box');
-  if (tipo === 'Formación' && espazosSeleccionados.length > 0) {
-    const [a,m,d] = data.split('-');
-    const dataFmt = `${d}/${m}/${a}`;
-    const codigoVal = document.getElementById('res-codigo').value;
-    const tituloVal = document.getElementById('res-titulo').value;
-    const relatorVal = document.getElementById('res-relator').value;
-    const liñas = espazosSeleccionados.map(espazo =>
-      `${dataFmt}	${espazo}	${codigoVal}	${tituloVal}	${relatorVal}	${horaIni}	${horaFin}`
-    );
-    const cabeceira = 'Data	Aula	Código	Título	Relator	HoraInicio	HoraFin';
-    document.getElementById('csv-contido').textContent = cabeceira + '\n' + liñas.join('\n');
-    csvBox.style.display = 'block';
-  } else {
-    csvBox.style.display = 'none';
-  }
+  const btnEnviarPrev = document.getElementById('btn-enviar');
+  btnEnviarPrev.style.display = 'inline-block';
+  btnEnviarPrev.disabled = false;
+  btnEnviarPrev.textContent = 'Confirmar e enviar';
 
   document.getElementById('resumo-box').scrollIntoView({ behavior: 'smooth' });
 }
@@ -1623,6 +1608,12 @@ function copiarCSV() {
 }
 
 async function enviarReserva() {
+  const btnEnviar = document.getElementById('btn-enviar');
+  if (btnEnviar.disabled) return; // garda anti-doble-clic
+  btnEnviar.disabled = true;
+  const textoOrixinalBtn = btnEnviar.textContent;
+  btnEnviar.textContent = 'Enviando...';
+
   const data = document.getElementById('res-data').value;
   const turno = document.getElementById('res-turno').value;
   const horaIni = document.getElementById('res-hora-inicio').value;
@@ -1668,17 +1659,21 @@ async function enviarReserva() {
   }
 
   // Enviar ao Apps Script
-  if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
-    for (const payload of payloads) {
-      try {
+  try {
+    if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
+      for (const payload of payloads) {
         await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-      } catch(e) { console.error('Erro ao enviar:', e); }
+      }
     }
+    mostrarAlerta('exito');
+    limparFormulario();
+    mostrarPanel('calendario');
+  } catch(e) {
+    console.error('Erro ao enviar:', e);
+    mostrarAlerta('erro');
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = textoOrixinalBtn;
   }
-
-  mostrarAlerta('exito');
-  limparFormulario();
-  mostrarPanel('calendario');
 }
 
 function limparFormulario() {
@@ -1709,7 +1704,6 @@ function limparFormulario() {
   actualizarRadios();
   document.getElementById('resumo-box').style.display = 'none';
   document.getElementById('btn-enviar').style.display = 'none';
-  document.getElementById('csv-box').style.display = 'none';
 }
 
 // ============================================================
