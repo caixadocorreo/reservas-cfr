@@ -746,6 +746,18 @@
     transition: background 0.2s;
   }
   .btn-eliminar-sesion:hover { background: var(--vermello-claro); }
+  .btn-duplicar-sesion {
+    background: none;
+    border: none;
+    color: var(--azul);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-right: 2px;
+    transition: background 0.2s;
+  }
+  .btn-duplicar-sesion:hover { background: var(--azul-claro); }
   .btn-engadir-sesion {
     background: none;
     border: 1.5px dashed var(--azul);
@@ -1446,19 +1458,20 @@ function seleccionarCatalogo() {
   document.getElementById('res-titulo').value = tit;
 }
 
-function engadirSesion() {
+function crearFilaSesion(valores) {
   contadorSesions++;
   const id = contadorSesions;
+  const v = valores || {};
   const recursos = RECURSOS_ACTUAIS.length > 0 ? RECURSOS_ACTUAIS : ['Carro 1 (21 portátiles)','Carro 2 (21 portátiles)','Carro 3 (30 portátiles)','Kit audiovisual (Radio)','Kit audiovisual (Vídeo)'];
   const opcsRecursos = ['<option value="">Ningún</option>'].concat(recursos.map(r => `<option value="${r}">${r}</option>`)).join('');
 
   const fila = document.createElement('tr');
   fila.id = `sesion-fila-${id}`;
   fila.innerHTML = `
-    <td><input type="date" id="ses-data-${id}"></td>
-    <td><input type="time" id="ses-hora-ini-${id}"></td>
-    <td><input type="time" id="ses-hora-fin-${id}"></td>
-    <td><input type="text" id="ses-relator-${id}" placeholder="Relator/a(s)"></td>
+    <td><input type="date" id="ses-data-${id}" value="${v.data || ''}"></td>
+    <td><input type="time" id="ses-hora-ini-${id}" value="${v.horaInicio || ''}"></td>
+    <td><input type="time" id="ses-hora-fin-${id}" value="${v.horaFin || ''}"></td>
+    <td><input type="text" id="ses-relator-${id}" placeholder="Relator/a(s)" value="${v.relator || ''}"></td>
     <td><select id="ses-recursos-${id}">${opcsRecursos}</select></td>
     <td>
       <select id="ses-cafe-${id}">
@@ -1466,9 +1479,33 @@ function engadirSesion() {
         <option value="Si">Si</option>
       </select>
     </td>
-    <td><button class="btn-eliminar-sesion" onclick="eliminarSesion(${id})" title="Eliminar">×</button></td>
+    <td style="white-space:nowrap">
+      <button class="btn-duplicar-sesion" onclick="duplicarSesion(${id})" title="Duplicar esta sesión">⧉</button>
+      <button class="btn-eliminar-sesion" onclick="eliminarSesion(${id})" title="Eliminar">×</button>
+    </td>
   `;
-  document.getElementById('sesions-body').appendChild(fila);
+  if (v.recursos) fila.querySelector(`#ses-recursos-${id}`).value = v.recursos;
+  if (v.cafe === 'Si') fila.querySelector(`#ses-cafe-${id}`).value = 'Si';
+  return fila;
+}
+
+function engadirSesion() {
+  document.getElementById('sesions-body').appendChild(crearFilaSesion());
+  actualizarContaSesions();
+}
+
+function duplicarSesion(id) {
+  const valores = {
+    data: document.getElementById(`ses-data-${id}`)?.value || '',
+    horaInicio: document.getElementById(`ses-hora-ini-${id}`)?.value || '',
+    horaFin: document.getElementById(`ses-hora-fin-${id}`)?.value || '',
+    relator: document.getElementById(`ses-relator-${id}`)?.value || '',
+    recursos: document.getElementById(`ses-recursos-${id}`)?.value || '',
+    cafe: document.getElementById(`ses-cafe-${id}`)?.value || 'Non',
+  };
+  const novaFila = crearFilaSesion(valores);
+  const filaOrixe = document.getElementById(`sesion-fila-${id}`);
+  filaOrixe.after(novaFila);
   actualizarContaSesions();
 }
 
@@ -1489,6 +1526,7 @@ function lerSesions() {
   filas.forEach(fila => {
     const id = fila.id.replace('sesion-fila-','');
     resultado.push({
+      filaId: id,
       data: document.getElementById(`ses-data-${id}`)?.value || '',
       horaInicio: document.getElementById(`ses-hora-ini-${id}`)?.value || '',
       horaFin: document.getElementById(`ses-hora-fin-${id}`)?.value || '',
@@ -1631,6 +1669,7 @@ async function enviarReserva() {
   const sesions = esMultisesion ? lerSesions() : [];
 
   const payloads = [];
+  const payloadFilaIds = []; // aliñado por índice con payloads; null cando non hai fila de sesión (reserva de sesión única)
   if (esMultisesion) {
     sesions.forEach(s => {
       payloads.push({
@@ -1644,6 +1683,7 @@ async function enviarReserva() {
         mobilidade: mob, observacions: obs,
         estado: 'Pendente', timestamp: new Date().toISOString(),
       });
+      payloadFilaIds.push(s.filaId);
     });
   } else {
     payloads.push({
@@ -1656,21 +1696,36 @@ async function enviarReserva() {
       observacions: obs, estado: 'Pendente',
       timestamp: new Date().toISOString(),
     });
+    payloadFilaIds.push(null);
   }
 
-  // Enviar ao Apps Script
-  try {
-    if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
-      for (const payload of payloads) {
-        await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+  // Enviar ao Apps Script (unha petición por payload; cada unha independente)
+  let erros = 0;
+  if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
+    for (let i = 0; i < payloads.length; i++) {
+      try {
+        await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payloads[i]) });
+        // Se esta fila se enviou ben, retírase do formulario para non duplicala nun reintento
+        const filaId = payloadFilaIds[i];
+        if (filaId) {
+          const fila = document.getElementById(`sesion-fila-${filaId}`);
+          if (fila) fila.remove();
+        }
+      } catch(e) {
+        console.error('Erro ao enviar payload:', e);
+        erros++;
       }
     }
+  }
+
+  if (erros === 0) {
     mostrarAlerta('exito');
     limparFormulario();
     mostrarPanel('calendario');
-  } catch(e) {
-    console.error('Erro ao enviar:', e);
-    mostrarAlerta('erro');
+  } else {
+    actualizarContaSesions();
+    const enviados = payloads.length - erros;
+    mostrarAlerta('erro', `⚠️ Enviáronse ${enviados} de ${payloads.length} rexistro(s). ${erros} fallaron por un problema de conexión. As sesións xa enviadas retiráronse desta lista — comproba a folla de Reservas e preme "Confirmar e enviar" de novo para reintentar só o que falta.`);
     btnEnviar.disabled = false;
     btnEnviar.textContent = textoOrixinalBtn;
   }
@@ -2059,10 +2114,17 @@ function toggleAxuda(cab) {
   cab.nextElementSibling.classList.toggle('aberto');
 }
 
-function mostrarAlerta(tipo) {
+function mostrarAlerta(tipo, mensaxe) {
   ocultarAlertas();
   const el = document.getElementById('alerta-' + tipo);
-  if (el) { el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 5000); }
+  if (!el) return;
+  if (!el.dataset.textoOrixinal) el.dataset.textoOrixinal = el.textContent;
+  el.textContent = mensaxe || el.dataset.textoOrixinal;
+  el.style.display = 'block';
+  if (tipo === 'exito') {
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+  // os avisos de erro quedan visibles ata que a persoa cambie de panel (ver ocultarAlertas en mostrarPanel)
 }
 
 function ocultarAlertas() {
