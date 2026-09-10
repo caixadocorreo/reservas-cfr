@@ -1,5 +1,7 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
+*Última actualización: 10/09/2026*
+
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
 URL en produción: `https://caixadocorreo.github.io/reservas-cfr/`
@@ -108,6 +110,8 @@ Táboa onde se engade unha fila por cada día de formación:
 
 Botón **"+ Engadir sesión"** para ir completando. Ao enviar, xérase unha fila no Sheet por cada sesión (mediante unha chamada a un Google Apps Script). O campo Turno de cada sesión non se pide: calcúlase automaticamente a partir da hora de inicio (antes das 14:00 → Mañá; a partir das 14:00 → Tarde).
 
+**Duplicar sesión**: cada fila inclúe un botón **⧉ Duplicar esta sesión**, que engade unha nova fila xusto despois da orixinal copiando todos os seus valores (data, horario, relator/a(s), recursos e café). É útil cando varias sesións comparten o mesmo horario e relator/a e só cambia a data: duplícase a fila e edítase unicamente o que sexa distinto.
+
 ### Paso 4 — Recursos (só para tipos de sesión única)
 Selección de recursos. A lista cárgase desde a folla `Recursos` do Sheet.
 
@@ -123,6 +127,14 @@ Campo de texto libre para información adicional.
 
 ### Previsualización e envío
 Antes de enviar móstrase un resumo completo. Ao confirmar, xérase unha fila no Sheet por cada sesión co estado `Pendente`.
+
+O botón **Confirmar e enviar** desactívase automaticamente mentres dura o envío (amosa "Enviando...") para evitar reservas duplicadas por premer varias veces seguidas.
+
+Cada fila (sesión) envíase de xeito independente ao Sheet:
+- Se todo se envía correctamente, móstrase un aviso de éxito e a aplicación volve ao calendario.
+- Se falla o envío dalgunha fila (por exemplo, por un problema puntual de conexión), as filas que **si** se enviaron correctamente retíranse automaticamente da táboa de sesións, e queda un aviso visible (non desaparece só) indicando cantas se enviaron e cantas fallaron. O botón "Confirmar e enviar" volve estar dispoñible para reintentar **unicamente** o que falta, sen risco de duplicar o que xa chegou ao Sheet.
+
+Se os fallos de envío se repiten de forma insistente (non puntual), convén revisar os *logs* de execución do Apps Script: **Extensións → Apps Script → Execucións**.
 
 ---
 
