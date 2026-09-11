@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 11/09/2026 (rexistro centralizado de erros de envío, folla Erros)*
+*Última actualización: 11/09/2026 (cancelar reserva propia, aviso de peche accidental, validacións de horario)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -48,6 +48,8 @@ Na parte superior do calendario pódese filtrar por **espazo**, por **estado** e
 
 ### Detalle dunha reserva
 Premendo en calquera evento do calendario ábrese un panel con todos os datos.
+
+**Cancelar unha reserva propia**: se a reserva é túa (mesmas iniciais que a persoa conectada) e segue **Pendente**, aparece un botón **"Cancelar esta reserva"**. Pide confirmación, márcaa como `Rexeitada` e engade a nota `[Cancelada pola persoa asesora]` en Observacións, para diferenciala dun rexeitamento da persoa responsable. Non é posible cancelar reservas xa `Aprobada` ou `Rexeitada` dende aquí, nin reservas doutra persoa.
 
 ### Actualización automática
 O calendario recarga os datos do Sheet cada **60 segundos**.
@@ -141,9 +143,13 @@ Campo de texto libre para información adicional.
 ### Previsualización e envío
 Antes de enviar móstrase un resumo completo. Ao confirmar, xérase unha fila no Sheet por cada sesión co estado `Pendente`.
 
+**Validacións de horario**: tanto ao previsualizar coma ao confirmar o envío, a aplicación **bloquea** se falta a data ou o horario nalgunha sesión, se non se engadiu ningunha sesión (AFI/PFPP), ou se a hora de fin non é posterior á hora de inicio.
+
 **Detección de conflitos de espazo**: ao previsualizar, a aplicación comproba se algún dos espazos seleccionados xa ten unha reserva `Pendente` ou `Aprobada` na mesma data cun horario que se solapa, e se é así móstrase un aviso laranxa co detalle do conflito (espazo, data, horario, tipo e persoa da reserva existente). É un **aviso, non un bloqueo**: a persoa pode confirmar igualmente a reserva a pesar do aviso, xa que a decisión final correspóndelle á persoa responsable na aprobación. Como o calendario se actualiza cada 60 segundos, en casos moi puntuais (reservas feitas segundos antes) podería non detectarse un conflito real.
 
 O botón **Confirmar e enviar** desactívase automaticamente mentres dura o envío (amosa "Enviando...") para evitar reservas duplicadas por premer varias veces seguidas.
+
+**Aviso por peche accidental**: se se toca calquera campo do formulario de Nova reserva e se intenta pechar ou recargar a pestana sen enviar, o navegador mostra un aviso de confirmación para evitar perder o traballo sen querer.
 
 Se o envío falla por un erro do propio sistema (non por un problema de conexión do navegador), queda **rexistrado automaticamente na folla `Erros`** do Sheet, con data, mensaxe de erro e os datos que se intentaron enviar. Os fallos de rede que non cheguen a chegar ao Apps Script (por exemplo, sen conexión) non poden quedar rexistrados aí, xa que o servidor nunca chega a velos.
 

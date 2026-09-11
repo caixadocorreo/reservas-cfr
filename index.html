@@ -685,6 +685,20 @@
   .estado-badge.pendente { background: #ffe0b2; color: #e65100; }
   .estado-badge.aprobada { background: #c8e6c9; color: #1b5e20; }
   .estado-badge.rexeitada { background: #ffcdd2; color: #b71c1c; }
+  .btn-cancelar-reserva {
+    width: 100%;
+    background: var(--vermello-claro);
+    color: var(--vermello);
+    border: 1.5px solid var(--vermello);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-cancelar-reserva:hover { background: #ffdada; }
+  .btn-cancelar-reserva:disabled { opacity: 0.6; cursor: default; }
 
   /* Filtros calendario */
   .cal-filtros {
@@ -1200,6 +1214,7 @@
           </div>
           <p>Vistas: <strong>Semana</strong> (luns–sábado), <strong>Mes</strong>, <strong>Set–Dec</strong>, <strong>Xan–Mar</strong>, <strong>Abr–Xuñ</strong>. Domingos en gris. Actualízase cada 60 segundos.</p>
           <div class="axuda-nota">Preme en calquera evento para ver todos os seus detalles.</div>
+          <div class="axuda-nota">Se a reserva é túa e segue <strong>Pendente</strong>, no panel de detalle aparece un botón para cancelala.</div>
           <div class="axuda-nota">A casa <strong>"As miñas reservas"</strong> filtra o calendario para amosar só as túas, combinable cos filtros de espazo e estado.</div>
         </div>
       </div>
@@ -1219,6 +1234,8 @@
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
           <div class="axuda-nota">Se dúas sesións da mesma reserva teñen datas e horarios que se solapan, a aplicación bloquea o envío ata que se corrixa (erro típico ao duplicar e esquecer cambiar a data).</div>
           <div class="axuda-nota">Ao premer <strong>"Confirmar e enviar"</strong> o botón queda desactivado mentres dura o envío para evitar reservas duplicadas. Se falla o envío dalgunha sesión, as que xa se enviaran retíranse da táboa e só se reintenta o que falta.</div>
+          <div class="axuda-nota">A hora de fin debe ser posterior á de inicio, e non se pode previsualizar/enviar con sesións sen data ou horario.</div>
+          <div class="axuda-nota">Se pechas ou recargas a pestana con cambios sen enviar, o navegador pedirache confirmación.</div>
           <div class="axuda-nota">Se un envío falla por un erro do propio sistema (non de conexión), queda rexistrado automaticamente na folla <strong>Erros</strong> do Sheet, coa data, a mensaxe e os datos que se intentaron enviar.</div>
           <div class="axuda-nota">Ao previsualizar, se algún espazo xa está reservado (Pendente ou Aprobada) nesa data e horario, aparece un aviso laranxa co detalle do conflito. Non impide enviar a reserva, só avisa antes de confirmar.</div>
         </div>
@@ -1339,6 +1356,17 @@ let vistaActual = 'semana';
 let semanaOffset = 0;
 let reservas = [];
 let CODIGOS_ASESORAS = [];
+
+// Aviso ao pechar/recargar a pestana se hai cambios sen enviar no formulario de Nova reserva
+let formTocado = false;
+document.getElementById('panel-nova-reserva').addEventListener('input', () => { formTocado = true; });
+document.getElementById('panel-nova-reserva').addEventListener('change', () => { formTocado = true; });
+window.addEventListener('beforeunload', (e) => {
+  if (formTocado) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 
 async function cargarAsesoras() {
   if (CSV_ASESORAS_URL === 'PENDENTE_URL_ASESORAS') return;
@@ -1549,6 +1577,24 @@ function opcionsFranxas() {
     FRANXAS_PREDEFINIDAS.map(f => `<option value="${f.valor}">${f.label}</option>`).join('');
 }
 
+// Comproba que cada sesión teña data+horario completos e que a hora de fin
+// sexa posterior á de inicio. Devolve unha lista de problemas (baleira se todo ok).
+function validarHorariosSesions(sesions) {
+  const problemas = [];
+  const varias = sesions.length > 1;
+  sesions.forEach((s, i) => {
+    if (!s.data || !s.horaInicio || !s.horaFin) {
+      problemas.push(varias ? `Sesión ${i + 1}: falta a data ou o horario.` : 'Falta a data ou o horario.');
+      return;
+    }
+    const ini = horaAMinutos(s.horaInicio), fin = horaAMinutos(s.horaFin);
+    if (ini !== null && fin !== null && fin <= ini) {
+      problemas.push(varias ? `Sesión ${i + 1}: a hora de fin debe ser posterior á de inicio.` : 'A hora de fin debe ser posterior á de inicio.');
+    }
+  });
+  return problemas;
+}
+
 function crearFilaSesion(valores) {
   contadorSesions++;
   const id = contadorSesions;
@@ -1751,6 +1797,18 @@ function previsualizar() {
   const obs = document.getElementById('res-observacions').value;
   const sesions = esMultisesion ? lerSesions() : [];
 
+  if (esMultisesion && sesions.length === 0) {
+    alert('Engade polo menos unha sesión antes de previsualizar.');
+    return;
+  }
+
+  const sesionsParaValidar = esMultisesion ? sesions : [{ data, horaInicio: horaIni, horaFin }];
+  const problemasHorario = validarHorariosSesions(sesionsParaValidar);
+  if (problemasHorario.length > 0) {
+    alert(problemasHorario.join('\n'));
+    return;
+  }
+
   if (esMultisesion) {
     const conflitosInternos = buscarConflitosInternos(sesions);
     if (conflitosInternos.length > 0) {
@@ -1845,6 +1903,22 @@ async function enviarReserva() {
   const esMultisesion = tiposMultisesion.includes(tipo);
   const sesions = esMultisesion ? lerSesions() : [];
 
+  if (esMultisesion && sesions.length === 0) {
+    alert('Engade polo menos unha sesión antes de enviar.');
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = textoOrixinalBtn;
+    return;
+  }
+
+  const sesionsParaValidar = esMultisesion ? sesions : [{ data, horaInicio: horaIni, horaFin }];
+  const problemasHorario = validarHorariosSesions(sesionsParaValidar);
+  if (problemasHorario.length > 0) {
+    alert(problemasHorario.join('\n'));
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = textoOrixinalBtn;
+    return;
+  }
+
   if (esMultisesion) {
     const conflitosInternos = buscarConflitosInternos(sesions);
     if (conflitosInternos.length > 0) {
@@ -1924,6 +1998,7 @@ async function enviarReserva() {
 }
 
 function limparFormulario() {
+  formTocado = false;
   document.getElementById('res-data').value = '';
   document.getElementById('res-turno').value = '';
   document.getElementById('res-hora-inicio').value = '';
@@ -1962,11 +2037,7 @@ async function cargarReservas() {
     const resp = await fetch(CSV_RESERVAS_URL);
     const texto = await resp.text();
     const liñas = texto.trim().split('\n').slice(1);
-    reservas = liñas.filter(l => {
-      if (!l.trim()) return false;
-      const cols = l.split(',');
-      return cols[1] && cols[1].trim() !== '';
-    }).map((liña, idx) => {
+    reservas = liñas.map((liña, idxOriginal) => {
       const cols = [];
       let cur = '', inQ = false;
       for (let i = 0; i < liña.length; i++) {
@@ -1978,8 +2049,11 @@ async function cargarReservas() {
       cols.push(cur.trim());
       // A data vén en formato AAAA-MM-DD directamente desde o Sheet
       const dataISO = (cols[2] || '').trim();
+      // filaNum = número de fila real na folla (cabeceira = fila 1, 1ª reserva = fila 2...),
+      // calculado ANTES de filtrar filas baleiras para que non se desaliñe.
       return {
-        id: idx + 1,
+        id: idxOriginal + 2,
+        filaNum: idxOriginal + 2,
         timestamp: cols[0] || '',
         asesora:   cols[1] || '',
         data:      dataISO,
@@ -1996,9 +2070,8 @@ async function cargarReservas() {
         mobilidade: cols[13] || '',
         observacions: cols[14] || '',
         estado:    cols[15] || 'Pendente',
-        filaNum:   cols[16] || '',
       };
-    });
+    }).filter(r => r.asesora && r.asesora.trim() !== '');
     console.log('Reservas cargadas:', reservas.length, reservas.map(r => r.data));
     renderCalendario();
   } catch(e) {
@@ -2197,6 +2270,7 @@ function verDetalle(id) {
   const r = reservas.find(x => x.id === id);
   if (!r) return;
   const [a,m,d] = r.data.split('-');
+  const podeCancelar = r.estado === 'Pendente' && r.asesora === usuarioActual;
   document.getElementById('modal-corpo').innerHTML = `
     <div class="modal-fila"><strong>Estado</strong><span><span class="estado-badge ${r.estado.toLowerCase()}">${r.estado}</span></span></div>
     <div class="modal-fila"><strong>Persoa</strong><span>${r.asesora}</span></div>
@@ -2207,8 +2281,33 @@ function verDetalle(id) {
     <div class="modal-fila"><strong>Pausa-café</strong><span>${r.cafe}</span></div>
     <div class="modal-fila"><strong>Mobilidade reducida</strong><span>${r.mobilidade}</span></div>
     ${r.observacions?`<div class="modal-fila"><strong>Observacións</strong><span>${r.observacions}</span></div>`:''}
+    ${podeCancelar?`<button class="btn btn-cancelar-reserva" onclick="cancelarReserva(${r.filaNum})" style="margin-top:14px">Cancelar esta reserva</button>`:''}
   `;
   document.getElementById('modal-overlay').classList.add('aberto');
+}
+
+async function cancelarReserva(filaNum) {
+  if (!confirm('Confirmas que queres cancelar esta reserva? Esta acción non se pode desfacer.')) return;
+  const boton = document.querySelector('.btn-cancelar-reserva');
+  if (boton) { boton.disabled = true; boton.textContent = 'Cancelando...'; }
+  try {
+    const resp = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ _accion: 'cancelar', asesora: usuarioActual, filaNum }),
+    });
+    const resultado = await resp.json();
+    if (resultado.resultado !== 'OK') {
+      alert('Non se puido cancelar: ' + (resultado.mensaxe || 'erro descoñecido.'));
+      if (boton) { boton.disabled = false; boton.textContent = 'Cancelar esta reserva'; }
+      return;
+    }
+    document.getElementById('modal-overlay').classList.remove('aberto');
+    await cargarReservas();
+  } catch(e) {
+    console.error('Erro ao cancelar reserva:', e);
+    alert('Non se puido cancelar por un problema de conexión. Téntao de novo.');
+    if (boton) { boton.disabled = false; boton.textContent = 'Cancelar esta reserva'; }
+  }
 }
 
 function exportarPDF() {
