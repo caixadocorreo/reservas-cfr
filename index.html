@@ -1985,13 +1985,15 @@ async function enviarReserva() {
   }
 
   if (erros === 0) {
-    mostrarAlerta('exito');
     limparFormulario();
     mostrarPanel('calendario');
+    mostrarAlerta('exito');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   } else {
     actualizarContaSesions();
     const enviados = payloads.length - erros;
     mostrarAlerta('erro', `⚠️ Enviáronse ${enviados} de ${payloads.length} rexistro(s). ${erros} fallaron por un problema de conexión. As sesións xa enviadas retiráronse desta lista — comproba a folla de Reservas e preme "Confirmar e enviar" de novo para reintentar só o que falta.`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     btnEnviar.disabled = false;
     btnEnviar.textContent = textoOrixinalBtn;
   }
