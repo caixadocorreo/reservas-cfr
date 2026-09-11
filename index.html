@@ -777,6 +777,17 @@
     transition: background 0.2s;
   }
   .btn-duplicar-sesion:hover { background: var(--azul-claro); }
+  .franxa-rapida {
+    display: block;
+    width: 100%;
+    font-size: 11px;
+    padding: 2px 4px;
+    margin-bottom: 3px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 4px;
+    background: #fafafa;
+    color: #666;
+  }
   .btn-engadir-sesion {
     background: none;
     border: 1.5px dashed var(--azul);
@@ -1054,7 +1065,16 @@
               <option value="Tarde">Tarde</option>
             </select>
           </div>
-          <div class="campo"></div>
+          <div class="campo">
+            <label>Horario predefinido</label>
+            <select id="res-franxa" onchange="aplicarFranxaPredefinida()">
+              <option value="">Persoalizado</option>
+              <option value="16:30-19:30">16:30 – 19:30</option>
+              <option value="16:30-20:30">16:30 – 20:30</option>
+              <option value="17:00-20:00">17:00 – 20:00</option>
+              <option value="17:00-21:00">17:00 – 21:00</option>
+            </select>
+          </div>
         </div>
         <div class="form-grid tres" style="margin-top:14px">
           <div class="campo">
@@ -1194,6 +1214,7 @@
           </table>
           <p>Espazos accesibles (mobilidade reducida): Aula 0, Salón de actos, Polo A, Polo B.</p>
           <p style="margin-top:8px">Relator/a(s): separar por <span class="axuda-tag">;</span> se hai varias persoas.</p>
+          <div class="axuda-nota">Selector <strong>"Horario predefinido"</strong> (Paso 2 e en cada fila de sesión): preenche automaticamente franxas de tarde habituais (16:30–19:30, 16:30–20:30, 17:00–20:00, 17:00–21:00). Escolle "Persoalizado" para escribir calquera outro horario a man.</div>
           <div class="axuda-nota">Para AFI e Formación PFPP, engade unha fila por cada sesión na táboa. O relator/a e os recursos poden variar por sesión.</div>
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
           <div class="axuda-nota">Se dúas sesións da mesma reserva teñen datas e horarios que se solapan, a aplicación bloquea o envío ata que se corrixa (erro típico ao duplicar e esquecer cambiar a data).</div>
@@ -1417,6 +1438,7 @@ function iniciar() {
   popularFiltroEspazo();
   cargarReservas();
   setInterval(cargarReservas, 60000);
+  document.getElementById('res-franxa').innerHTML = opcionsFranxas(); // fonte única: FRANXAS_PREDEFINIDAS
 
   const hoxe = new Date();
   const minData = hoxe.toISOString().split('T')[0];
@@ -1435,6 +1457,15 @@ function renderRecursos(lista) {
     <label class="recurso-check" onclick="this.classList.toggle('marcado')">
       <input type="checkbox" value="${r}"> ${r}
     </label>`).join('');
+}
+
+function aplicarFranxaPredefinida() {
+  const valor = document.getElementById('res-franxa').value;
+  if (!valor) return; // "Persoalizado": non toca nada
+  const [ini, fin] = valor.split('-');
+  document.getElementById('res-hora-inicio').value = ini;
+  document.getElementById('res-hora-fin').value = fin;
+  document.getElementById('res-turno').value = 'Tarde'; // as 4 franxas predefinidas son de tarde
 }
 
 function actualizarEspazosDisponibles() {
@@ -1505,6 +1536,18 @@ function seleccionarCatalogo() {
   document.getElementById('res-titulo').value = tit;
 }
 
+// Horarios predefinidos de tarde, para non ter que escribilos á man cada vez
+const FRANXAS_PREDEFINIDAS = [
+  { valor: '16:30-19:30', label: '16:30 – 19:30' },
+  { valor: '16:30-20:30', label: '16:30 – 20:30' },
+  { valor: '17:00-20:00', label: '17:00 – 20:00' },
+  { valor: '17:00-21:00', label: '17:00 – 21:00' },
+];
+function opcionsFranxas() {
+  return '<option value="">Persoalizado</option>' +
+    FRANXAS_PREDEFINIDAS.map(f => `<option value="${f.valor}">${f.label}</option>`).join('');
+}
+
 function crearFilaSesion(valores) {
   contadorSesions++;
   const id = contadorSesions;
@@ -1516,7 +1559,10 @@ function crearFilaSesion(valores) {
   fila.id = `sesion-fila-${id}`;
   fila.innerHTML = `
     <td><input type="date" id="ses-data-${id}" value="${v.data || ''}"></td>
-    <td><input type="time" id="ses-hora-ini-${id}" value="${v.horaInicio || ''}"></td>
+    <td>
+      <select class="franxa-rapida" onchange="aplicarFranxaSesion(${id}, this.value)">${opcionsFranxas()}</select>
+      <input type="time" id="ses-hora-ini-${id}" value="${v.horaInicio || ''}">
+    </td>
     <td><input type="time" id="ses-hora-fin-${id}" value="${v.horaFin || ''}"></td>
     <td><input type="text" id="ses-relator-${id}" placeholder="Relator/a(s)" value="${v.relator || ''}"></td>
     <td><select id="ses-recursos-${id}">${opcsRecursos}</select></td>
@@ -1539,6 +1585,13 @@ function crearFilaSesion(valores) {
 function engadirSesion() {
   document.getElementById('sesions-body').appendChild(crearFilaSesion());
   actualizarContaSesions();
+}
+
+function aplicarFranxaSesion(id, valor) {
+  if (!valor) return; // "Persoalizado": non toca nada, déixase escribir a man
+  const [ini, fin] = valor.split('-');
+  document.getElementById(`ses-hora-ini-${id}`).value = ini;
+  document.getElementById(`ses-hora-fin-${id}`).value = fin;
 }
 
 function duplicarSesion(id) {
@@ -1870,6 +1923,7 @@ function limparFormulario() {
   document.getElementById('res-turno').value = '';
   document.getElementById('res-hora-inicio').value = '';
   document.getElementById('res-hora-fin').value = '';
+  if (document.getElementById('res-franxa')) document.getElementById('res-franxa').value = '';
   document.getElementById('res-tipo').value = '';
   document.getElementById('res-codigo').value = '';
   document.getElementById('res-titulo').value = '';

@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 11/09/2026 (bloqueo de solapamento entre sesións da mesma reserva)*
+*Última actualización: 11/09/2026 (horarios predefinidos de tarde)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -83,6 +83,8 @@ Para **AFI** e **Formación PFPP** aparece un despregable de **catálogo** que a
 Só visible para tipos de sesión única (Reunión interna, Videoconferencia, Docencias compartidas).
 - Data (mínimo: hoxe), Turno, Hora inicio, Hora fin, Pausa-café
 
+**Horario predefinido**: selector con catro franxas de tarde habituais (16:30–19:30, 16:30–20:30, 17:00–20:00, 17:00–21:00) que preenche automaticamente Hora inicio, Hora fin e pon o Turno en "Tarde". A opción por defecto "Persoalizado" non toca nada, para poder escribir calquera outro horario (incluídas mañás) a man.
+
 ### Paso 3 — Espazos
 - Indicar se hai persoas con **mobilidade reducida** — se Si, só se mostran espazos de planta baixa
 - Engadir espazos un a un co botón "+ Engadir"
@@ -116,6 +118,8 @@ Táboa onde se engade unha fila por cada día de formación:
 | Café | Si ou Non para esa sesión |
 
 Botón **"+ Engadir sesión"** para ir completando. Ao enviar, xérase unha fila no Sheet por cada sesión (mediante unha chamada a un Google Apps Script). O campo Turno de cada sesión non se pide: calcúlase automaticamente a partir da hora de inicio (antes das 14:00 → Mañá; a partir das 14:00 → Tarde).
+
+**Horario predefinido por sesión**: cada fila ten un pequeno selector, enriba do campo Hora inicio, coas mesmas catro franxas de tarde do Paso 2. Ao escoller unha, preenche Hora inicio e Hora fin desa fila; a opción "Persoalizado" (por defecto) deixa escribir calquera outro horario a man.
 
 **Duplicar sesión**: cada fila inclúe un botón **⧉ Duplicar esta sesión**, que engade unha nova fila xusto despois da orixinal copiando todos os seus valores (data, horario, relator/a(s), recursos e café). É útil cando varias sesións comparten o mesmo horario e relator/a e só cambia a data: duplícase a fila e edítase unicamente o que sexa distinto.
 
