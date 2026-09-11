@@ -1219,6 +1219,7 @@
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
           <div class="axuda-nota">Se dúas sesións da mesma reserva teñen datas e horarios que se solapan, a aplicación bloquea o envío ata que se corrixa (erro típico ao duplicar e esquecer cambiar a data).</div>
           <div class="axuda-nota">Ao premer <strong>"Confirmar e enviar"</strong> o botón queda desactivado mentres dura o envío para evitar reservas duplicadas. Se falla o envío dalgunha sesión, as que xa se enviaran retíranse da táboa e só se reintenta o que falta.</div>
+          <div class="axuda-nota">Se un envío falla por un erro do propio sistema (non de conexión), queda rexistrado automaticamente na folla <strong>Erros</strong> do Sheet, coa data, a mensaxe e os datos que se intentaron enviar.</div>
           <div class="axuda-nota">Ao previsualizar, se algún espazo xa está reservado (Pendente ou Aprobada) nesa data e horario, aparece un aviso laranxa co detalle do conflito. Non impide enviar a reserva, só avisa antes de confirmar.</div>
         </div>
       </div>
@@ -1891,7 +1892,11 @@ async function enviarReserva() {
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
     for (let i = 0; i < payloads.length; i++) {
       try {
-        await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payloads[i]) });
+        const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payloads[i]) });
+        const resultado = await resp.json();
+        if (resultado.resultado !== 'OK') {
+          throw new Error(resultado.mensaxe || 'O servidor devolveu un erro sen detalle');
+        }
         // Se esta fila se enviou ben, retírase do formulario para non duplicala nun reintento
         const filaId = payloadFilaIds[i];
         if (filaId) {

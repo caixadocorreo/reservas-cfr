@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 11/09/2026 (horarios predefinidos de tarde)*
+*Última actualización: 11/09/2026 (rexistro centralizado de erros de envío, folla Erros)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -145,6 +145,8 @@ Antes de enviar móstrase un resumo completo. Ao confirmar, xérase unha fila no
 
 O botón **Confirmar e enviar** desactívase automaticamente mentres dura o envío (amosa "Enviando...") para evitar reservas duplicadas por premer varias veces seguidas.
 
+Se o envío falla por un erro do propio sistema (non por un problema de conexión do navegador), queda **rexistrado automaticamente na folla `Erros`** do Sheet, con data, mensaxe de erro e os datos que se intentaron enviar. Os fallos de rede que non cheguen a chegar ao Apps Script (por exemplo, sen conexión) non poden quedar rexistrados aí, xa que o servidor nunca chega a velos.
+
 Cada fila (sesión) envíase de xeito independente ao Sheet:
 - Se todo se envía correctamente, móstrase un aviso de éxito e a aplicación volve ao calendario.
 - Se falla o envío dalgunha fila (por exemplo, por un problema puntual de conexión), as filas que **si** se enviaron correctamente retíranse automaticamente da táboa de sesións, e queda un aviso visible (non desaparece só) indicando cantas se enviaron e cantas fallaron. O botón "Confirmar e enviar" volve estar dispoñible para reintentar **unicamente** o que falta, sen risco de duplicar o que xa chegou ao Sheet.
@@ -163,6 +165,8 @@ A persoa responsable traballa directamente no **Google Sheet**:
 4. O calendario web reflicte o cambio no seguinte ciclo de recarga (máximo 60 segundos)
 
 **Consello**: usa **Datos → Crear un filtro** para ordenar e filtrar por estado, data ou espazo sen alterar a orde real dos datos nin o CSV publicado.
+
+**Consello**: revisa de cando en vez a folla `Erros` (§5) para detectar reservas que fallaron ao intentar gardarse — a persoa que as intentou enviar puido non decatarse se o fallo non foi definitivo á primeira.
 
 ---
 
@@ -215,6 +219,15 @@ A persoa responsable traballa directamente no **Google Sheet**:
 |---|---|
 | A | `PIN` |
 | B | Valor do PIN |
+
+### Folla `Erros`
+Créase automaticamente pola primeira vez que un envío falla. Non hai que crear nada previamente.
+
+| Columna | Campo |
+|---|---|
+| A | Timestamp |
+| B | Mensaxe de erro |
+| C | Datos recibidos (bruto, en formato JSON) |
 
 ---
 
@@ -273,7 +286,12 @@ A cabeceira da aplicación ten o mesmo estilo que a cartelería TV e o carrusel:
 
 Para cambios no **contido** (recursos, catálogo, estados): editar o Google Sheet.
 
-Para cambios no **código ou deseño**:
+Para cambios no **código ou deseño** (`index.html`):
 1. Editar o ficheiro `index.html`
 2. Subir a GitHub en `caixadocorreo/reservas-cfr`
 3. GitHub Pages actualízase en poucos minutos
+
+Para cambios no **backend** (Apps Script — o código que recibe as reservas e as escribe no Sheet):
+1. No Google Sheet: **Extensións → Apps Script**
+2. Editar o código e gardar
+3. **Implementar → Xestionar implementacións → (icona lapis) → Nova versión → Implementar**. É imprescindible crear unha nova versión; gardar o código só non abonda para que os cambios cheguen á URL que xa usa a aplicación.
