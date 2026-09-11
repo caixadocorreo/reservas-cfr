@@ -701,6 +701,14 @@
     font-size: 13px;
     background: white;
   }
+  .filtro-miñas {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .filtro-miñas input { cursor: pointer; }
 
   /* Aviso sen datos */
   .sen-datos {
@@ -954,6 +962,10 @@
             <option value="Aprobada">Aprobada</option>
             <option value="Rexeitada">Rexeitada</option>
           </select>
+          <label class="filtro-miñas">
+            <input type="checkbox" id="filtro-miñas" onchange="renderCalendario()">
+            As miñas reservas
+          </label>
         </div>
       </div>
 
@@ -1168,6 +1180,7 @@
           </div>
           <p>Vistas: <strong>Semana</strong> (luns–sábado), <strong>Mes</strong>, <strong>Set–Dec</strong>, <strong>Xan–Mar</strong>, <strong>Abr–Xuñ</strong>. Domingos en gris. Actualízase cada 60 segundos.</p>
           <div class="axuda-nota">Preme en calquera evento para ver todos os seus detalles.</div>
+          <div class="axuda-nota">A casa <strong>"As miñas reservas"</strong> filtra o calendario para amosar só as túas, combinable cos filtros de espazo e estado.</div>
         </div>
       </div>
       <div class="axuda-seccion">
@@ -1269,7 +1282,7 @@ const CSV_CATALOGO_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRINyq
 let CATALOGO = [];
 const CSV_RECURSOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1567420509&single=true&output=csv';
 const CSV_RESERVAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=0&single=true&output=csv'; // Cambiar por PIN real
-const CSV_ASESORAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1331552294&single=true&output=csv'; // Publicar SÓ a columna A (códigos) da folla Asesoras — ver LEEME
+const CSV_ASESORAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1331552294&single=true&output=csv';
 
 const ESPAZOS_TODOS = [
   { nome: 'Aula 0',        andar: 'Planta baixa', accesible: true  },
@@ -1954,9 +1967,11 @@ function renderMesUnico(cont) {
 function filtrarReservas(lista) {
   const esp = document.getElementById('filtro-espazo').value;
   const est = document.getElementById('filtro-estado').value;
+  const soMiñas = document.getElementById('filtro-miñas')?.checked;
   return lista.filter(r => {
     if (esp && !r.espazos.includes(esp)) return false;
     if (est && r.estado !== est) return false;
+    if (soMiñas && r.asesora !== usuarioActual) return false;
     return true;
   });
 }

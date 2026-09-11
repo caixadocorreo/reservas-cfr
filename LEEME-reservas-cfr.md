@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 11/09/2026*
+*Última actualización: 11/09/2026 (filtro "As miñas reservas")*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -44,7 +44,7 @@ Vista principal da aplicación. Mostra todas as reservas do sistema con código 
 - **Abr–Xuñ** — vista trimestral (abril a xuño)
 
 ### Filtros
-Na parte superior do calendario pódese filtrar por **espazo** e por **estado**.
+Na parte superior do calendario pódese filtrar por **espazo**, por **estado** e, mediante a casa de verificación **"As miñas reservas"**, amosar unicamente as reservas da persoa conectada. Os filtros combínanse entre si.
 
 ### Detalle dunha reserva
 Premendo en calquera evento do calendario ábrese un panel con todos os datos.
