@@ -1791,6 +1791,17 @@ async function enviarReserva() {
   const esMultisesion = tiposMultisesion.includes(tipo);
   const sesions = esMultisesion ? lerSesions() : [];
 
+  if (esMultisesion) {
+    const conflitosInternos = buscarConflitosInternos(sesions);
+    if (conflitosInternos.length > 0) {
+      const detalle = conflitosInternos.map(c => `Sesión ${c.i} e Sesión ${c.j}`).join('; ');
+      alert(`Hai sesións desta mesma reserva que se solapan entre si: ${detalle}.\n\nCorrixe as datas ou horarios antes de continuar (é un erro frecuente ao duplicar unha sesión e esquecer cambiar a data).`);
+      btnEnviar.disabled = false;
+      btnEnviar.textContent = textoOrixinalBtn;
+      return;
+    }
+  }
+
   const payloads = [];
   const payloadFilaIds = []; // aliñado por índice con payloads; null cando non hai fila de sesión (reserva de sesión única)
   if (esMultisesion) {
