@@ -2272,7 +2272,7 @@ function verDetalle(id) {
   const r = reservas.find(x => x.id === id);
   if (!r) return;
   const [a,m,d] = r.data.split('-');
-  const podeCancelar = r.estado === 'Pendente' && r.asesora === usuarioActual;
+  const podeCancelar = r.estado === 'Pendente' && r.asesora === usuarioActual && r.filaNum >= 2;
   document.getElementById('modal-corpo').innerHTML = `
     <div class="modal-fila"><strong>Estado</strong><span><span class="estado-badge ${r.estado.toLowerCase()}">${r.estado}</span></span></div>
     <div class="modal-fila"><strong>Persoa</strong><span>${r.asesora}</span></div>
@@ -2289,6 +2289,11 @@ function verDetalle(id) {
 }
 
 async function cancelarReserva(filaNum) {
+  if (!filaNum || filaNum < 2) {
+    alert('Non se puido identificar a fila desta reserva no Sheet. Recarga a páxina e téntao de novo.');
+    console.error('cancelarReserva chamada sen filaNum válido:', filaNum);
+    return;
+  }
   if (!confirm('Confirmas que queres cancelar esta reserva? Esta acción non se pode desfacer.')) return;
   const boton = document.querySelector('.btn-cancelar-reserva');
   if (boton) { boton.disabled = true; boton.textContent = 'Cancelando...'; }
