@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 10/09/2026*
+*Última actualización: 11/09/2026*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -16,6 +16,13 @@ A aplicación está protexida por PIN. Na pantalla de inicio:
 - **Iniciais**: as 3 letras que identifican á persoa asesora (primeira letra do nome + primeira letra de cada apelido, en maiúsculas). Exemplo: Ana Martínez García → `AMG`
 
 A relación de iniciais e nomes reais está na folla `Asesoras` do Google Sheet, só accesible internamente.
+
+### Validación das iniciais
+A aplicación comproba que as iniciais introducidas correspondan a unha persoa asesora real, contra unha lista de códigos válidos cargada desde `CSV_ASESORAS_URL`.
+
+**Importante — privacidade**: esa URL debe publicar **unicamente a columna de códigos** (columna A da folla `Asesoras`), **nunca** a columna de nomes reais (columna B), xa que calquera CSV publicado en Google Sheets é accesible publicamente por quen teña a ligazón. Se se quere manter a folla `Asesoras` orixinal sen publicar (como ata agora), pódese crear unha folla auxiliar só coa columna de códigos e publicar esa.
+
+Se `CSV_ASESORAS_URL` non está configurada (valor `PENDENTE_URL_ASESORAS`) ou falla a súa carga, a validación **desactívase automaticamente** e só se comproba que se escribiron 3 letras — non se bloquea o acceso a ninguén por un problema de rede ou configuración.
 
 ---
 
@@ -128,6 +135,8 @@ Campo de texto libre para información adicional.
 ### Previsualización e envío
 Antes de enviar móstrase un resumo completo. Ao confirmar, xérase unha fila no Sheet por cada sesión co estado `Pendente`.
 
+**Detección de conflitos de espazo**: ao previsualizar, a aplicación comproba se algún dos espazos seleccionados xa ten unha reserva `Pendente` ou `Aprobada` na mesma data cun horario que se solapa, e se é así móstrase un aviso laranxa co detalle do conflito (espazo, data, horario, tipo e persoa da reserva existente). É un **aviso, non un bloqueo**: a persoa pode confirmar igualmente a reserva a pesar do aviso, xa que a decisión final correspóndelle á persoa responsable na aprobación. Como o calendario se actualiza cada 60 segundos, en casos moi puntuais (reservas feitas segundos antes) podería non detectarse un conflito real.
+
 O botón **Confirmar e enviar** desactívase automaticamente mentres dura o envío (amosa "Enviando...") para evitar reservas duplicadas por premer varias veces seguidas.
 
 Cada fila (sesión) envíase de xeito independente ao Sheet:
@@ -193,6 +202,8 @@ A persoa responsable traballa directamente no **Google Sheet**:
 | A | Código (3 letras) |
 | B | Nome completo |
 
+*Nota de privacidade*: esta folla en si non se publica. Para a validación de iniciais (§1), só se publica a columna A (código) — nunha folla auxiliar se non se quere tocar a orixinal. A columna B (nome completo) non debe publicarse nunca en CSV.
+
 ### Folla `Config`
 | Columna | Campo |
 |---|---|
@@ -208,6 +219,7 @@ A persoa responsable traballa directamente no **Google Sheet**:
 | `CSV_RESERVAS_URL` | Reservas (calendario) |
 | `CSV_RECURSOS_URL` | Recursos (formulario) |
 | `CSV_CATALOGO_URL` | Catálogo de actividades |
+| `CSV_ASESORAS_URL` | Códigos de asesoras (só columna A, para validar o login) |
 
 ---
 

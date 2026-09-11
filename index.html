@@ -334,6 +334,17 @@
     min-width: 140px;
   }
   .resumo-fila span { color: #444; }
+  .resumo-conflito {
+    background: #fff3e0;
+    border: 1px solid #f57c00;
+    color: #e65100;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    font-size: 13px;
+  }
+  .resumo-conflito strong { display: block; margin-bottom: 4px; }
+  .resumo-conflito ul { margin: 4px 0 6px 18px; padding: 0; }
 
   /* =====================================================
      BOTÓNS
@@ -1144,6 +1155,7 @@
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🔐 Acceso á aplicación <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <p>PIN do centro + iniciais (1ª letra nome + 1ª letra cada apelido en maiúsculas). Ex: Ana Martínez García → <span class="axuda-tag">AMG</span></p>
+          <div class="axuda-nota">As iniciais compróbanse contra a lista de asesoras do centro. Se non se recoñecen, o acceso rexéitase.</div>
         </div>
       </div>
       <div class="axuda-seccion">
@@ -1172,6 +1184,7 @@
           <div class="axuda-nota">Para AFI e Formación PFPP, engade unha fila por cada sesión na táboa. O relator/a e os recursos poden variar por sesión.</div>
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
           <div class="axuda-nota">Ao premer <strong>"Confirmar e enviar"</strong> o botón queda desactivado mentres dura o envío para evitar reservas duplicadas. Se falla o envío dalgunha sesión, as que xa se enviaran retíranse da táboa e só se reintenta o que falta.</div>
+          <div class="axuda-nota">Ao previsualizar, se algún espazo xa está reservado (Pendente ou Aprobada) nesa data e horario, aparece un aviso laranxa co detalle do conflito. Non impide enviar a reserva, só avisa antes de confirmar.</div>
         </div>
       </div>
       <div class="axuda-seccion">
@@ -1256,6 +1269,7 @@ const CSV_CATALOGO_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRINyq
 let CATALOGO = [];
 const CSV_RECURSOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1567420509&single=true&output=csv';
 const CSV_RESERVAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=0&single=true&output=csv'; // Cambiar por PIN real
+const CSV_ASESORAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1331552294&single=true&output=csv'; // Publicar SÓ a columna A (códigos) da folla Asesoras — ver LEEME
 
 const ESPAZOS_TODOS = [
   { nome: 'Aula 0',        andar: 'Planta baixa', accesible: true  },
@@ -1288,6 +1302,20 @@ let espazosSeleccionados = [];
 let vistaActual = 'semana';
 let semanaOffset = 0;
 let reservas = [];
+let CODIGOS_ASESORAS = [];
+
+async function cargarAsesoras() {
+  if (CSV_ASESORAS_URL === 'PENDENTE_URL_ASESORAS') return;
+  try {
+    const resp = await fetch(CSV_ASESORAS_URL);
+    const texto = await resp.text();
+    const liñas = texto.trim().split('\n').slice(1); // omite a cabeceira
+    CODIGOS_ASESORAS = liñas
+      .map(l => (l.split(',')[0] || '').replace(/"/g, '').trim().toUpperCase()) // só a 1ª columna (código); ignora calquera outra por privacidade
+      .filter(c => c.length === 3);
+  } catch(e) { console.error('Erro ao cargar asesoras:', e); }
+}
+cargarAsesoras();
 
 // ============================================================
 // LOGIN
@@ -1297,7 +1325,10 @@ function fazerLogin() {
   const ases = document.getElementById('login-asesora').value.toUpperCase().trim();
   const erro = document.getElementById('login-erro');
 
-  if (pin !== PIN_CORRECTO || ases.length !== 3) {
+  // Se a lista non cargou (folla non publicada ou fallo de rede), non se bloquea o acceso: só se valida o formato.
+  const iniciaisRecoñecidas = CODIGOS_ASESORAS.length === 0 || CODIGOS_ASESORAS.includes(ases);
+
+  if (pin !== PIN_CORRECTO || ases.length !== 3 || !iniciaisRecoñecidas) {
     erro.style.display = 'block';
     return;
   }
@@ -1568,6 +1599,46 @@ function renderEspazosSeleccionados() {
 // ============================================================
 // PREVISUALIZACIÓN E ENVÍO
 // ============================================================
+function horaAMinutos(hhmm) {
+  if (!hhmm) return null;
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h)) return null;
+  return h * 60 + (m || 0);
+}
+
+function solapanHorarios(iniA, finA, iniB, finB) {
+  const a1 = horaAMinutos(iniA), a2 = horaAMinutos(finA);
+  const b1 = horaAMinutos(iniB), b2 = horaAMinutos(finB);
+  if (a1 === null || a2 === null || b1 === null || b2 === null) return false;
+  return a1 < b2 && b1 < a2;
+}
+
+// Comproba, para cada sesión a piques de enviar, se algún espazo seleccionado xa está
+// ocupado (reserva Pendente ou Aprobada) na mesma data cun horario que se solapa.
+function buscarConflitosEspazo(sesionsAComprobar) {
+  const conflitos = [];
+  sesionsAComprobar.forEach(s => {
+    if (!s.data || !s.horaInicio || !s.horaFin) return;
+    espazosSeleccionados.forEach(espazo => {
+      reservas.forEach(r => {
+        if (r.estado === 'Rexeitada') return;
+        if (r.data !== s.data) return;
+        const espazosReserva = (r.espazos || '').split(';').map(e => e.trim()).filter(Boolean);
+        if (!espazosReserva.includes(espazo)) return;
+        if (solapanHorarios(s.horaInicio, s.horaFin, r.horaInicio, r.horaFin)) {
+          conflitos.push({
+            espazo, data: s.data,
+            horaSesion: `${s.horaInicio}–${s.horaFin}`,
+            horaExistente: `${r.horaInicio}–${r.horaFin}`,
+            estado: r.estado, asesora: r.asesora, tipo: r.tipo || 'sen tipo',
+          });
+        }
+      });
+    });
+  });
+  return conflitos;
+}
+
 function previsualizar() {
   const data = document.getElementById('res-data').value;
   const turno = document.getElementById('res-turno').value;
@@ -1596,10 +1667,21 @@ function previsualizar() {
   const obs = document.getElementById('res-observacions').value;
   const sesions = esMultisesion ? lerSesions() : [];
 
+  const sesionsAComprobar = esMultisesion ? sesions : [{ data, horaInicio: horaIni, horaFin }];
+  const conflitos = buscarConflitosEspazo(sesionsAComprobar);
+
   const resumo = document.getElementById('resumo-contido');
   const [a,m,d] = data.split('-');
   const meses2 = ['xaneiro','febreiro','marzo','abril','maio','xuño','xullo','agosto','setembro','outubro','novembro','decembro'];
-  let resumoHTML = `
+  let resumoHTML = '';
+  if (conflitos.length > 0) {
+    const itensConflito = conflitos.map(c => {
+      const [ca,cm,cy] = c.data.split('-');
+      return `<li>${c.espazo} — ${cy}/${cm}/${ca} ${c.horaSesion} solapa cunha reserva ${c.estado.toLowerCase()} (${c.tipo}, ${c.asesora || '?'}) ${c.horaExistente}</li>`;
+    }).join('');
+    resumoHTML += `<div class="resumo-conflito"><strong>⚠️ Posible conflito de espazo (${conflitos.length})</strong><ul>${itensConflito}</ul>Revisa antes de confirmar: pode que outra persoa xa teña ese espazo reservado nesa data e hora.</div>`;
+  }
+  resumoHTML += `
     <div class="resumo-fila"><strong>Persoa:</strong><span>${usuarioActual}</span></div>
     <div class="resumo-fila"><strong>Espazos:</strong><span>${espazosSeleccionados.join(', ')}</span></div>
     <div class="resumo-fila"><strong>Mobilidade reducida:</strong><span>${mob}</span></div>
