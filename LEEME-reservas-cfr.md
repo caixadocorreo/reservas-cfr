@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 11/09/2026 (filtro "As miñas reservas")*
+*Última actualización: 11/09/2026 (bloqueo de solapamento entre sesións da mesma reserva)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -118,6 +118,8 @@ Táboa onde se engade unha fila por cada día de formación:
 Botón **"+ Engadir sesión"** para ir completando. Ao enviar, xérase unha fila no Sheet por cada sesión (mediante unha chamada a un Google Apps Script). O campo Turno de cada sesión non se pide: calcúlase automaticamente a partir da hora de inicio (antes das 14:00 → Mañá; a partir das 14:00 → Tarde).
 
 **Duplicar sesión**: cada fila inclúe un botón **⧉ Duplicar esta sesión**, que engade unha nova fila xusto despois da orixinal copiando todos os seus valores (data, horario, relator/a(s), recursos e café). É útil cando varias sesións comparten o mesmo horario e relator/a e só cambia a data: duplícase a fila e edítase unicamente o que sexa distinto.
+
+**Solapamento entre sesións da mesma reserva**: se dúas ou máis filas da táboa teñen a mesma data cun horario que se solapa entre si (erro típico ao duplicar unha sesión e esquecer cambiar a data), a aplicación **bloquea** a previsualización e o envío ata que se corrixa, indicando cales sesións conflitúan.
 
 ### Paso 4 — Recursos (só para tipos de sesión única)
 Selección de recursos. A lista cárgase desde a folla `Recursos` do Sheet.

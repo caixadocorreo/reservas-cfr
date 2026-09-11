@@ -1196,6 +1196,7 @@
           <p style="margin-top:8px">Relator/a(s): separar por <span class="axuda-tag">;</span> se hai varias persoas.</p>
           <div class="axuda-nota">Para AFI e Formación PFPP, engade unha fila por cada sesión na táboa. O relator/a e os recursos poden variar por sesión.</div>
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
+          <div class="axuda-nota">Se dúas sesións da mesma reserva teñen datas e horarios que se solapan, a aplicación bloquea o envío ata que se corrixa (erro típico ao duplicar e esquecer cambiar a data).</div>
           <div class="axuda-nota">Ao premer <strong>"Confirmar e enviar"</strong> o botón queda desactivado mentres dura o envío para evitar reservas duplicadas. Se falla o envío dalgunha sesión, as que xa se enviaran retíranse da táboa e só se reintenta o que falta.</div>
           <div class="axuda-nota">Ao previsualizar, se algún espazo xa está reservado (Pendente ou Aprobada) nesa data e horario, aparece un aviso laranxa co detalle do conflito. Non impide enviar a reserva, só avisa antes de confirmar.</div>
         </div>
@@ -1652,6 +1653,22 @@ function buscarConflitosEspazo(sesionsAComprobar) {
   return conflitos;
 }
 
+// Comproba se dúas ou máis sesións DENTRO DA MESMA reserva teñen datas e horarios
+// que se solapan entre si (erro típico ao duplicar unha sesión e esquecer cambiar a data).
+function buscarConflitosInternos(sesions) {
+  const conflitos = [];
+  for (let i = 0; i < sesions.length; i++) {
+    for (let j = i + 1; j < sesions.length; j++) {
+      const a = sesions[i], b = sesions[j];
+      if (!a.data || !a.horaInicio || !a.horaFin || !b.data || !b.horaInicio || !b.horaFin) continue;
+      if (a.data === b.data && solapanHorarios(a.horaInicio, a.horaFin, b.horaInicio, b.horaFin)) {
+        conflitos.push({ i: i + 1, j: j + 1 });
+      }
+    }
+  }
+  return conflitos;
+}
+
 function previsualizar() {
   const data = document.getElementById('res-data').value;
   const turno = document.getElementById('res-turno').value;
@@ -1679,6 +1696,15 @@ function previsualizar() {
   const relator = document.getElementById('res-relator')?.value || '';
   const obs = document.getElementById('res-observacions').value;
   const sesions = esMultisesion ? lerSesions() : [];
+
+  if (esMultisesion) {
+    const conflitosInternos = buscarConflitosInternos(sesions);
+    if (conflitosInternos.length > 0) {
+      const detalle = conflitosInternos.map(c => `Sesión ${c.i} e Sesión ${c.j}`).join('; ');
+      alert(`Hai sesións desta mesma reserva que se solapan entre si: ${detalle}.\n\nCorrixe as datas ou horarios antes de continuar (é un erro frecuente ao duplicar unha sesión e esquecer cambiar a data).`);
+      return;
+    }
+  }
 
   const sesionsAComprobar = esMultisesion ? sesions : [{ data, horaInicio: horaIni, horaFin }];
   const conflitos = buscarConflitosEspazo(sesionsAComprobar);
