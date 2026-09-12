@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 11/09/2026 (cancelar reserva propia, aviso de peche accidental, validacións de horario)*
+*Última actualización: 11/09/2026 (nova pestana Informes de ocupación, con descarga en PDF)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -67,7 +67,27 @@ Na vista **Semana** aparece tamén o botón **📋 Exportar semana para Sesións
 
 ---
 
-## 3. Nova reserva
+## 3. Informes de ocupación
+
+Pestana **"📊 Informes"**. Calcúlase enteiramente no navegador a partir das reservas xa cargadas (non fai falta tocar o Sheet nin o Apps Script).
+
+### Período
+Despregable con: Este mes, Mes pasado, Este trimestre, Curso actual (setembro–xuño), Ano natural actual, ou **Personalizado** (mostra dous selectores de data). Ao premer **"Xerar informe"** calcúlanse os datos dese rango.
+
+### Contido do informe
+- **4 tarxetas de resumo**: reservas totais, Aprobadas, Pendentes, Rexeitadas (con % de taxa de rexeitamento sobre o total).
+- **Horas de ocupación por espazo**: gráfico de barras coas horas reservadas en cada aula/espazo, de maior a menor. Só conta reservas `Aprobada` e `Pendente` — as `Rexeitada` non chegaron a ocupar nada.
+- **Reservas por tipo de actividade**: gráfico de barras (AFI, Formación PFPP, Reunión interna, Videoconferencia, Docencias compartidas).
+- **Reservas por persoa asesora**: táboa coas iniciais e o número de reservas de cada unha.
+
+Os gráficos son barras HTML/CSS sinxelas, sen ningunha libraría externa — coherente co resto da aplicación, que é un único ficheiro sen dependencias de rede.
+
+### Descargar en PDF
+Botón **"🖨️ Descargar PDF"** (aparece despois de xerar un informe). Reutiliza o mesmo mecanismo de impresión do navegador que xa usa o calendario (A4 apaisado): xera unha cabeceira co período e agocha os controis do formulario, deixando só o resultado.
+
+---
+
+## 4. Nova reserva
 
 ### Paso 1 — Tipo de actividade
 
@@ -127,6 +147,8 @@ Botón **"+ Engadir sesión"** para ir completando. Ao enviar, xérase unha fila
 
 **Solapamento entre sesións da mesma reserva**: se dúas ou máis filas da táboa teñen a mesma data cun horario que se solapa entre si (erro típico ao duplicar unha sesión e esquecer cambiar a data), a aplicación **bloquea** a previsualización e o envío ata que se corrixa, indicando cales sesións conflitúan.
 
+**Segundo recurso (caso pouco habitual)**: se unha sesión precisa dous recursos á vez (por exemplo, kit audiovisual de radio e un carro de portátiles), o enlace **"+ outro recurso"** debaixo do selector de Recursos engade un segundo selector. Os dous valores gárdanse xuntos na columna Recursos, separados por `;`.
+
 ### Paso 4 — Recursos (só para tipos de sesión única)
 Selección de recursos. A lista cárgase desde a folla `Recursos` do Sheet.
 
@@ -161,7 +183,7 @@ Se os fallos de envío se repiten de forma insistente (non puntual), convén rev
 
 ---
 
-## 4. Xestión de reservas (persoa responsable)
+## 5. Xestión de reservas (persoa responsable)
 
 A persoa responsable traballa directamente no **Google Sheet**:
 
@@ -172,11 +194,11 @@ A persoa responsable traballa directamente no **Google Sheet**:
 
 **Consello**: usa **Datos → Crear un filtro** para ordenar e filtrar por estado, data ou espazo sen alterar a orde real dos datos nin o CSV publicado.
 
-**Consello**: revisa de cando en vez a folla `Erros` (§5) para detectar reservas que fallaron ao intentar gardarse — a persoa que as intentou enviar puido non decatarse se o fallo non foi definitivo á primeira.
+**Consello**: revisa de cando en vez a folla `Erros` (§6) para detectar reservas que fallaron ao intentar gardarse — a persoa que as intentou enviar puido non decatarse se o fallo non foi definitivo á primeira.
 
 ---
 
-## 5. Fonte de datos — Google Sheet
+## 6. Fonte de datos — Google Sheet
 
 ### Folla `Reservas`
 | Columna | Campo |
@@ -237,7 +259,7 @@ Créase automaticamente pola primeira vez que un envío falla. Non hai que crear
 
 ---
 
-## 6. Constantes CSV no código
+## 7. Constantes CSV no código
 
 | Constante | Folla |
 |---|---|
@@ -248,13 +270,13 @@ Créase automaticamente pola primeira vez que un envío falla. Non hai que crear
 
 ---
 
-## 7. Cabeceira
+## 8. Cabeceira
 
 A cabeceira da aplicación ten o mesmo estilo que a cartelería TV e o carrusel: logo CFR á esquerda, título centrado con as iniciais da persoa conectada, e logo Xacobeo 2027 á dereita. Os logos están embutidos en base64 no código.
 
 ---
 
-## 8. Cambiar o PIN
+## 9. Cambiar o PIN
 
 1. Descarga o `index.html` de GitHub
 2. Busca: `const PIN_CORRECTO = '...'`
@@ -263,7 +285,7 @@ A cabeceira da aplicación ten o mesmo estilo que a cartelería TV e o carrusel:
 
 ---
 
-## 9. Engadir novos recursos
+## 10. Engadir novos recursos
 
 1. Abre a folla `Recursos` do Sheet
 2. Engade fila co nome e `Si` en Activo
@@ -271,7 +293,7 @@ A cabeceira da aplicación ten o mesmo estilo que a cartelería TV e o carrusel:
 
 ---
 
-## 10. Engadir actividades ao catálogo
+## 11. Engadir actividades ao catálogo
 
 1. Abre a folla `Catalogo` do Sheet
 2. Engade fila con Tipo, Código, Título e `Si` en Activo
@@ -279,7 +301,7 @@ A cabeceira da aplicación ten o mesmo estilo que a cartelería TV e o carrusel:
 
 ---
 
-## 11. Engadir novos espazos
+## 12. Engadir novos espazos
 
 1. Descarga o `index.html` de GitHub
 2. Busca: `const ESPAZOS_TODOS = [`
@@ -288,7 +310,7 @@ A cabeceira da aplicación ten o mesmo estilo que a cartelería TV e o carrusel:
 
 ---
 
-## 12. Actualización do sistema
+## 13. Actualización do sistema
 
 Para cambios no **contido** (recursos, catálogo, estados): editar o Google Sheet.
 

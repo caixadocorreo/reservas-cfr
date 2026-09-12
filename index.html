@@ -802,6 +802,32 @@
     background: #fafafa;
     color: #666;
   }
+  .btn-engadir-recurso {
+    display: block;
+    background: none;
+    border: none;
+    color: var(--azul);
+    font-size: 11px;
+    padding: 2px 0;
+    margin-top: 3px;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .recurso-extra-wrap {
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .recurso-extra-wrap select { flex: 1; }
+  .btn-quitar-recurso {
+    background: none;
+    border: none;
+    color: var(--vermello);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 4px;
+    line-height: 1;
+  }
   .btn-engadir-sesion {
     background: none;
     border: 1.5px dashed var(--azul);
@@ -886,7 +912,7 @@
     #btn-exportar-wrap, #btn-pdf-mes-wrap, .nav-tabs,
     #panel-nova-reserva, #panel-axuda,
     .modal-overlay { display: none !important; }
-    #panel-calendario { display: block !important; }
+    .panel.activo { display: block !important; }
     main { margin: 0; padding: 0; max-width: 100%; }
     .pdf-cabeceira { display: flex !important; align-items: center; justify-content: space-between; border-bottom: 2px solid #007bc4; padding-bottom: 8px; margin-bottom: 16px; }
     .pdf-cab-titulo { font-size: 14px; font-weight: 700; color: #007bc4; }
@@ -902,9 +928,49 @@
     .evento { font-size: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .multi-mes-grid.catro { grid-template-columns: repeat(2, 1fr); }
     .multi-mes-grid.tres { grid-template-columns: repeat(3, 1fr); }
+    #informe-controis-card { display: none !important; }
+    .informe-tarxeta, .informe-bloque { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    .informe-barra-encher { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     @page { margin: 1.5cm; size: A4 landscape; }
   }
   .pdf-cabeceira { display: none; }
+
+  /* Informe de ocupación */
+  .informe-resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .informe-tarxeta {
+    background: white;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    padding: 16px;
+    text-align: center;
+  }
+  .informe-tarxeta .valor { font-size: 26px; font-weight: 700; color: var(--azul); }
+  .informe-tarxeta .valor.laranxa { color: #e65100; }
+  .informe-tarxeta .valor.verde { color: var(--verde); }
+  .informe-tarxeta .valor.vermello { color: var(--vermello); }
+  .informe-tarxeta .etiqueta { font-size: 12px; color: #666; margin-top: 4px; }
+  .informe-bloque {
+    background: white;
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .informe-bloque h4 { font-size: 14px; color: var(--azul); margin-bottom: 12px; }
+  .informe-barra-fila { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+  .informe-barra-etiqueta { width: 130px; flex-shrink: 0; color: #333; text-align: right; }
+  .informe-barra-pista { flex: 1; background: #eee; border-radius: 4px; height: 18px; overflow: hidden; }
+  .informe-barra-encher { background: var(--azul); height: 100%; border-radius: 4px; }
+  .informe-barra-valor { width: 70px; flex-shrink: 0; color: #555; font-size: 12px; }
+  .informe-nota { font-size: 12px; color: #888; margin-top: 6px; }
+  .informe-taboa { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .informe-taboa th, .informe-taboa td { padding: 6px 8px; text-align: left; border-bottom: 1px solid #eee; }
+  .informe-taboa th { color: #666; font-weight: 600; }
 
   @media (max-width: 640px) {
     .form-grid { grid-template-columns: 1fr; }
@@ -948,6 +1014,7 @@
 
   <nav class="nav-tabs">
     <button class="nav-tab activo" onclick="mostrarPanel('calendario')">📅 Calendario</button>
+    <button class="nav-tab" onclick="mostrarPanel('informes')">📊 Informes</button>
     <button class="nav-tab" onclick="mostrarPanel('nova-reserva')">➕ Nova reserva</button>
     <button class="nav-tab" onclick="mostrarPanel('axuda')">❓ Axuda</button>
   </nav>
@@ -1009,6 +1076,43 @@
       </div>
 
       <div id="cal-contido"></div>
+    </div>
+
+    <!-- ================================================
+         PANEL INFORMES
+    ================================================ -->
+    <div id="panel-informes" class="panel">
+      <div class="form-card" id="informe-controis-card">
+        <h3>📊 Informe de ocupación</h3>
+        <div class="form-grid tres">
+          <div class="campo">
+            <label>Período</label>
+            <select id="informe-periodo" onchange="actualizarVisibilidadeDatasInforme()">
+              <option value="mes-actual">Este mes</option>
+              <option value="mes-pasado">Mes pasado</option>
+              <option value="trimestre-actual">Este trimestre</option>
+              <option value="curso-actual">Curso actual (set–xuño)</option>
+              <option value="ano-actual">Ano natural actual</option>
+              <option value="personalizado">Personalizado…</option>
+            </select>
+          </div>
+          <div class="campo" id="informe-desde-campo" style="display:none">
+            <label>Desde</label>
+            <input type="date" id="informe-desde">
+          </div>
+          <div class="campo" id="informe-ata-campo" style="display:none">
+            <label>Ata</label>
+            <input type="date" id="informe-ata">
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primario" onclick="xerarInforme()">Xerar informe</button>
+          <button class="btn btn-secundario" id="btn-pdf-informe" onclick="exportarInformePDF()" style="display:none">🖨️ Descargar PDF</button>
+        </div>
+      </div>
+
+      <div id="informe-cabeceira-dyn" class="pdf-cabeceira"></div>
+      <div id="informe-resultado"></div>
     </div>
 
     <!-- ================================================
@@ -1219,6 +1323,15 @@
         </div>
       </div>
       <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">📊 Informes de ocupación <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <p>Escolle un <strong>período</strong> (mes, trimestre, curso, ano ou datas personalizadas) e preme <strong>"Xerar informe"</strong>.</p>
+          <div class="axuda-nota">Amosa reservas totais por estado, horas de ocupación por espazo, reservas por tipo de actividade e por persoa asesora.</div>
+          <div class="axuda-nota">As horas de ocupación só contan reservas Aprobadas e Pendentes — as Rexeitadas non se inclúen.</div>
+          <div class="axuda-nota">Botón <strong>"🖨️ Descargar PDF"</strong> dispoñible despois de xerar o informe.</div>
+        </div>
+      </div>
+      <div class="axuda-seccion">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">➕ Nova reserva <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <table class="axuda-tabla">
@@ -1232,6 +1345,7 @@
           <div class="axuda-nota">Selector <strong>"Horario predefinido"</strong> (Paso 2 e en cada fila de sesión): preenche automaticamente franxas de tarde habituais (16:30–19:30, 16:30–20:30, 17:00–20:00, 17:00–21:00). Escolle "Persoalizado" para escribir calquera outro horario a man.</div>
           <div class="axuda-nota">Para AFI e Formación PFPP, engade unha fila por cada sesión na táboa. O relator/a e os recursos poden variar por sesión.</div>
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
+          <div class="axuda-nota">Enlace <strong>"+ outro recurso"</strong>: para os casos pouco habituais nos que unha sesión precisa dous recursos á vez (por exemplo, kit de radio e un carro de portátiles).</div>
           <div class="axuda-nota">Se dúas sesións da mesma reserva teñen datas e horarios que se solapan, a aplicación bloquea o envío ata que se corrixa (erro típico ao duplicar e esquecer cambiar a data).</div>
           <div class="axuda-nota">Ao premer <strong>"Confirmar e enviar"</strong> o botón queda desactivado mentres dura o envío para evitar reservas duplicadas. Se falla o envío dalgunha sesión, as que xa se enviaran retíranse da táboa e só se reintenta o que falta.</div>
           <div class="axuda-nota">A hora de fin debe ser posterior á de inicio, e non se pode previsualizar/enviar con sesións sen data ou horario.</div>
@@ -1612,7 +1726,14 @@ function crearFilaSesion(valores) {
     </td>
     <td><input type="time" id="ses-hora-fin-${id}" value="${v.horaFin || ''}"></td>
     <td><input type="text" id="ses-relator-${id}" placeholder="Relator/a(s)" value="${v.relator || ''}"></td>
-    <td><select id="ses-recursos-${id}">${opcsRecursos}</select></td>
+    <td>
+      <select id="ses-recursos-${id}">${opcsRecursos}</select>
+      <div id="ses-recursos-extra-wrap-${id}" class="recurso-extra-wrap" style="display:none">
+        <select id="ses-recursos-2-${id}">${opcsRecursos}</select>
+        <button type="button" class="btn-quitar-recurso" onclick="quitarRecursoExtra(${id})" title="Quitar este recurso">×</button>
+      </div>
+      <button type="button" class="btn-engadir-recurso" id="btn-engadir-recurso-${id}" onclick="engadirRecursoExtra(${id})">+ outro recurso</button>
+    </td>
     <td>
       <select id="ses-cafe-${id}">
         <option value="Non">Non</option>
@@ -1624,7 +1745,15 @@ function crearFilaSesion(valores) {
       <button class="btn-eliminar-sesion" onclick="eliminarSesion(${id})" title="Eliminar">×</button>
     </td>
   `;
-  if (v.recursos) fila.querySelector(`#ses-recursos-${id}`).value = v.recursos;
+  if (v.recursos) {
+    const partesRecursos = v.recursos.split(';').map(x => x.trim()).filter(Boolean);
+    if (partesRecursos[0]) fila.querySelector(`#ses-recursos-${id}`).value = partesRecursos[0];
+    if (partesRecursos[1]) {
+      fila.querySelector(`#ses-recursos-2-${id}`).value = partesRecursos[1];
+      fila.querySelector(`#ses-recursos-extra-wrap-${id}`).style.display = 'flex';
+      fila.querySelector(`#btn-engadir-recurso-${id}`).style.display = 'none';
+    }
+  }
   if (v.cafe === 'Si') fila.querySelector(`#ses-cafe-${id}`).value = 'Si';
   return fila;
 }
@@ -1632,6 +1761,22 @@ function crearFilaSesion(valores) {
 function engadirSesion() {
   document.getElementById('sesions-body').appendChild(crearFilaSesion());
   actualizarContaSesions();
+}
+
+function engadirRecursoExtra(id) {
+  const wrap = document.getElementById(`ses-recursos-extra-wrap-${id}`);
+  const btn = document.getElementById(`btn-engadir-recurso-${id}`);
+  if (wrap) wrap.style.display = 'flex';
+  if (btn) btn.style.display = 'none';
+}
+
+function quitarRecursoExtra(id) {
+  const wrap = document.getElementById(`ses-recursos-extra-wrap-${id}`);
+  const sel2 = document.getElementById(`ses-recursos-2-${id}`);
+  const btn = document.getElementById(`btn-engadir-recurso-${id}`);
+  if (sel2) sel2.value = '';
+  if (wrap) wrap.style.display = 'none';
+  if (btn) btn.style.display = 'inline-block';
 }
 
 function aplicarFranxaSesion(id, valor) {
@@ -1647,7 +1792,10 @@ function duplicarSesion(id) {
     horaInicio: document.getElementById(`ses-hora-ini-${id}`)?.value || '',
     horaFin: document.getElementById(`ses-hora-fin-${id}`)?.value || '',
     relator: document.getElementById(`ses-relator-${id}`)?.value || '',
-    recursos: document.getElementById(`ses-recursos-${id}`)?.value || '',
+    recursos: [
+      document.getElementById(`ses-recursos-${id}`)?.value || '',
+      document.getElementById(`ses-recursos-2-${id}`)?.value || '',
+    ].filter(Boolean).join('; '),
     cafe: document.getElementById(`ses-cafe-${id}`)?.value || 'Non',
   };
   const novaFila = crearFilaSesion(valores);
@@ -1678,7 +1826,10 @@ function lerSesions() {
       horaInicio: document.getElementById(`ses-hora-ini-${id}`)?.value || '',
       horaFin: document.getElementById(`ses-hora-fin-${id}`)?.value || '',
       relator: document.getElementById(`ses-relator-${id}`)?.value || '',
-      recursos: document.getElementById(`ses-recursos-${id}`)?.value || '',
+      recursos: [
+        document.getElementById(`ses-recursos-${id}`)?.value || '',
+        document.getElementById(`ses-recursos-2-${id}`)?.value || '',
+      ].filter(Boolean).join('; '),
       cafe: document.getElementById(`ses-cafe-${id}`)?.value || 'Non',
     });
   });
@@ -2317,6 +2468,140 @@ async function cancelarReserva(filaNum) {
   }
 }
 
+// ============================================================
+// INFORME DE OCUPACIÓN
+// ============================================================
+function actualizarVisibilidadeDatasInforme() {
+  const personalizado = document.getElementById('informe-periodo').value === 'personalizado';
+  document.getElementById('informe-desde-campo').style.display = personalizado ? 'block' : 'none';
+  document.getElementById('informe-ata-campo').style.display = personalizado ? 'block' : 'none';
+}
+
+function calcularRangoInforme() {
+  const periodo = document.getElementById('informe-periodo').value;
+  const hoxe = new Date();
+  let desde, ata, etiqueta;
+  if (periodo === 'mes-actual') {
+    desde = new Date(hoxe.getFullYear(), hoxe.getMonth(), 1);
+    ata = new Date(hoxe.getFullYear(), hoxe.getMonth() + 1, 0);
+    etiqueta = `${MESES[hoxe.getMonth()]} ${hoxe.getFullYear()}`;
+  } else if (periodo === 'mes-pasado') {
+    desde = new Date(hoxe.getFullYear(), hoxe.getMonth() - 1, 1);
+    ata = new Date(hoxe.getFullYear(), hoxe.getMonth(), 0);
+    etiqueta = `${MESES[desde.getMonth()]} ${desde.getFullYear()}`;
+  } else if (periodo === 'trimestre-actual') {
+    const t = Math.floor(hoxe.getMonth() / 3);
+    desde = new Date(hoxe.getFullYear(), t * 3, 1);
+    ata = new Date(hoxe.getFullYear(), t * 3 + 3, 0);
+    etiqueta = `Trimestre ${MESES[desde.getMonth()]}–${MESES[ata.getMonth()]} ${hoxe.getFullYear()}`;
+  } else if (periodo === 'curso-actual') {
+    const anoInicio = hoxe.getMonth() >= 8 ? hoxe.getFullYear() : hoxe.getFullYear() - 1;
+    desde = new Date(anoInicio, 8, 1);
+    ata = new Date(anoInicio + 1, 5, 30);
+    etiqueta = `Curso ${anoInicio}–${anoInicio + 1}`;
+  } else if (periodo === 'ano-actual') {
+    desde = new Date(hoxe.getFullYear(), 0, 1);
+    ata = new Date(hoxe.getFullYear(), 11, 31);
+    etiqueta = `Ano ${hoxe.getFullYear()}`;
+  } else {
+    const d1 = document.getElementById('informe-desde').value;
+    const d2 = document.getElementById('informe-ata').value;
+    if (!d1 || !d2) return null;
+    desde = new Date(d1 + 'T00:00:00');
+    ata = new Date(d2 + 'T00:00:00');
+    etiqueta = `${d1.split('-').reverse().join('/')} – ${d2.split('-').reverse().join('/')}`;
+  }
+  return { desde, ata, etiqueta };
+}
+
+function xerarInforme() {
+  const rango = calcularRangoInforme();
+  const cont = document.getElementById('informe-resultado');
+  if (!rango) {
+    cont.innerHTML = '<p style="color:#c62828">Escolle as dúas datas do período personalizado.</p>';
+    document.getElementById('btn-pdf-informe').style.display = 'none';
+    return;
+  }
+
+  const enRango = reservas.filter(r => {
+    if (!r.data) return false;
+    const d = new Date(r.data + 'T00:00:00');
+    return d >= rango.desde && d <= rango.ata;
+  });
+
+  const total = enRango.length;
+  const nAprobada = enRango.filter(r => r.estado === 'Aprobada').length;
+  const nPendente = enRango.filter(r => r.estado === 'Pendente').length;
+  const nRexeitada = enRango.filter(r => r.estado === 'Rexeitada').length;
+  const taxaRexeitamento = total > 0 ? Math.round((nRexeitada / total) * 100) : 0;
+
+  // Horas por espazo (só reservas Aprobada + Pendente: as Rexeitadas non chegaron a ocupar nada)
+  const horasPorEspazo = {};
+  enRango.filter(r => r.estado !== 'Rexeitada').forEach(r => {
+    const dur = horaAMinutos(r.horaFin) !== null && horaAMinutos(r.horaInicio) !== null
+      ? (horaAMinutos(r.horaFin) - horaAMinutos(r.horaInicio)) / 60 : 0;
+    (r.espazos || '').split(';').map(e => e.trim()).filter(Boolean).forEach(esp => {
+      horasPorEspazo[esp] = (horasPorEspazo[esp] || 0) + dur;
+    });
+  });
+
+  // Reservas por tipo
+  const porTipo = {};
+  enRango.forEach(r => { const t = r.tipo || 'Sen tipo'; porTipo[t] = (porTipo[t] || 0) + 1; });
+
+  // Reservas por asesora
+  const porAsesora = {};
+  enRango.forEach(r => { const a = r.asesora || '?'; porAsesora[a] = (porAsesora[a] || 0) + 1; });
+
+  cont.innerHTML = `
+    <div class="informe-resumo-grid">
+      <div class="informe-tarxeta"><div class="valor">${total}</div><div class="etiqueta">Reservas totais</div></div>
+      <div class="informe-tarxeta"><div class="valor verde">${nAprobada}</div><div class="etiqueta">Aprobadas</div></div>
+      <div class="informe-tarxeta"><div class="valor laranxa">${nPendente}</div><div class="etiqueta">Pendentes</div></div>
+      <div class="informe-tarxeta"><div class="valor vermello">${nRexeitada}</div><div class="etiqueta">Rexeitadas (${taxaRexeitamento}%)</div></div>
+    </div>
+    <div class="informe-bloque">
+      <h4>Horas de ocupación por espazo</h4>
+      ${renderBarrasInforme(horasPorEspazo, 'h')}
+      <div class="informe-nota">Inclúe reservas Aprobadas e Pendentes; exclúe Rexeitadas.</div>
+    </div>
+    <div class="informe-bloque">
+      <h4>Reservas por tipo de actividade</h4>
+      ${renderBarrasInforme(porTipo, '')}
+    </div>
+    <div class="informe-bloque">
+      <h4>Reservas por persoa asesora</h4>
+      <table class="informe-taboa">
+        <tr><th>Iniciais</th><th>Reservas</th></tr>
+        ${Object.entries(porAsesora).sort((a,b)=>b[1]-a[1]).map(([a,n]) => `<tr><td>${a}</td><td>${n}</td></tr>`).join('')}
+      </table>
+    </div>
+  `;
+  document.getElementById('btn-pdf-informe').style.display = 'inline-block';
+  document.getElementById('btn-pdf-informe').dataset.etiqueta = rango.etiqueta;
+}
+
+// Xera un gráfico de barras horizontais sinxelo (sen librarías externas) a partir dun obxecto {etiqueta: valor}
+function renderBarrasInforme(datos, unidade) {
+  const entradas = Object.entries(datos).sort((a, b) => b[1] - a[1]);
+  if (entradas.length === 0) return '<p style="color:#888;font-size:13px">Sen datos neste período.</p>';
+  const max = Math.max(...entradas.map(e => e[1]));
+  return entradas.map(([etiqueta, valor]) => `
+    <div class="informe-barra-fila">
+      <div class="informe-barra-etiqueta">${etiqueta}</div>
+      <div class="informe-barra-pista"><div class="informe-barra-encher" style="width:${max > 0 ? (valor / max * 100) : 0}%"></div></div>
+      <div class="informe-barra-valor">${unidade === 'h' ? valor.toFixed(1) + ' h' : valor}</div>
+    </div>
+  `).join('');
+}
+
+function exportarInformePDF() {
+  const cab = document.getElementById('informe-cabeceira-dyn');
+  const etiqueta = document.getElementById('btn-pdf-informe').dataset.etiqueta || '';
+  cab.innerHTML = `<div><div class="pdf-cab-titulo">Informe de ocupación · CFR de Vigo</div><div class="pdf-cab-subtitulo">${etiqueta}</div></div><div class="pdf-cab-logo">CFR DE VIGO<br><span style="font-weight:400;font-size:10px">Centro de Formación e Recursos</span></div>`;
+  window.print();
+}
+
 function exportarPDF() {
   const cab = document.getElementById('pdf-cabeceira-dyn');
   const agora = new Date();
@@ -2405,7 +2690,7 @@ function mostrarPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('activo'));
   document.getElementById('panel-' + id).classList.add('activo');
-  const idx = ['calendario','nova-reserva','axuda'].indexOf(id);
+  const idx = ['calendario','informes','nova-reserva','axuda'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx]?.classList.add('activo');
   ocultarAlertas();
 }
