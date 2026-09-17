@@ -1241,6 +1241,10 @@
             </select>
             <button class="btn-engadir-espazo" onclick="engadirEspazo()">+ Engadir</button>
           </div>
+          <div id="espazo-externo-detalle-campo" style="display:none;margin-top:10px">
+            <label>Onde se realiza (centro, enderezo…) *</label>
+            <input type="text" id="espazo-externo-detalle" placeholder="Ex: IES Rosalía de Castro — pavillón">
+          </div>
         </div>
       </div>
 
@@ -1451,6 +1455,7 @@ const ESPAZOS_TODOS = [
   { nome: 'Aula 6',        andar: '1º andar',     accesible: false },
   { nome: 'Aula 7',        andar: '2º andar',     accesible: false },
   { nome: 'Aula 8',        andar: '2º andar',     accesible: false },
+  { nome: 'Espazo externo',andar: 'Externo',      accesible: true  },
 ];
 
 const RECURSOS = [
@@ -1693,6 +1698,19 @@ function opcionsFranxas() {
 
 // Comproba que cada sesión teña data+horario completos e que a hora de fin
 // sexa posterior á de inicio. Devolve unha lista de problemas (baleira se todo ok).
+// Se se escolleu "Espazo externo", esixe o detalle de onde se fai e engádeo ás
+// Observacións; devolve null (e avisa) se falta ese detalle.
+function calcularObservacionsFinais() {
+  const base = document.getElementById('res-observacions').value;
+  if (!espazosSeleccionados.includes('Espazo externo')) return base;
+  const detalle = document.getElementById('espazo-externo-detalle').value.trim();
+  if (!detalle) {
+    alert('Indica onde se realiza a actividade (centro, enderezo…) no campo baixo "Espazo externo".');
+    return null;
+  }
+  return (base ? base + ' ' : '') + `[Espazo externo: ${detalle}]`;
+}
+
 function validarHorariosSesions(sesions) {
   const problemas = [];
   const varias = sesions.length > 1;
@@ -1859,6 +1877,9 @@ function renderEspazosSeleccionados() {
   cont.innerHTML = espazosSeleccionados.map(e =>
     `<div class="espazo-tag">${e}<button onclick="quitarEspazo('${e}')">×</button></div>`
   ).join('');
+  const temExterno = espazosSeleccionados.includes('Espazo externo');
+  document.getElementById('espazo-externo-detalle-campo').style.display = temExterno ? 'block' : 'none';
+  if (!temExterno) document.getElementById('espazo-externo-detalle').value = '';
 }
 
 // ============================================================
@@ -1884,7 +1905,7 @@ function buscarConflitosEspazo(sesionsAComprobar) {
   const conflitos = [];
   sesionsAComprobar.forEach(s => {
     if (!s.data || !s.horaInicio || !s.horaFin) return;
-    espazosSeleccionados.forEach(espazo => {
+    espazosSeleccionados.filter(e => e !== 'Espazo externo').forEach(espazo => {
       reservas.forEach(r => {
         if (r.estado === 'Rexeitada') return;
         if (r.data !== s.data) return;
@@ -1945,7 +1966,8 @@ function previsualizar() {
   const codigo = document.getElementById('res-codigo').value;
   const titulo = document.getElementById('res-titulo').value;
   const relator = document.getElementById('res-relator')?.value || '';
-  const obs = document.getElementById('res-observacions').value;
+  const obs = calcularObservacionsFinais();
+  if (obs === null) return;
   const sesions = esMultisesion ? lerSesions() : [];
 
   if (esMultisesion && sesions.length === 0) {
@@ -2049,7 +2071,12 @@ async function enviarReserva() {
   const codigo = document.getElementById('res-codigo').value;
   const titulo = document.getElementById('res-titulo').value;
   const relator = document.getElementById('res-relator')?.value || '';
-  const obs = document.getElementById('res-observacions').value;
+  const obs = calcularObservacionsFinais();
+  if (obs === null) {
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = textoOrixinalBtn;
+    return;
+  }
   const tiposMultisesion = ['AFI', 'Formación PFPP'];
   const esMultisesion = tiposMultisesion.includes(tipo);
   const sesions = esMultisesion ? lerSesions() : [];
