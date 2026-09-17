@@ -544,6 +544,7 @@
     font-size: 11px;
     font-weight: 700;
     color: var(--azul-escuro);
+    min-width: 0;
   }
   .mes-dias {
     display: grid;
@@ -551,11 +552,13 @@
   }
   .mes-dia {
     min-height: 52px;
+    min-width: 0;
     border: 0.5px solid var(--gris-borde);
     padding: 3px;
     font-size: 11px;
     vertical-align: top;
     cursor: default;
+    overflow: hidden;
   }
   .mes-dia.outro-mes { background: #f9f9f9; }
   .mes-dia.hoxe { background: #fffde7; }
@@ -1351,7 +1354,8 @@
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
           <div class="axuda-nota">Enlace <strong>"+ outro recurso"</strong>: para os casos pouco habituais nos que unha sesión precisa dous recursos á vez (por exemplo, kit de radio e un carro de portátiles).</div>
           <div class="axuda-nota">Se dúas sesións da mesma reserva teñen datas e horarios que se solapan, a aplicación bloquea o envío ata que se corrixa (erro típico ao duplicar e esquecer cambiar a data).</div>
-          <div class="axuda-nota">Ao premer <strong>"Confirmar e enviar"</strong> o botón queda desactivado mentres dura o envío para evitar reservas duplicadas. Se falla o envío dalgunha sesión, as que xa se enviaran retíranse da táboa e só se reintenta o que falta.</div>
+          <div class="axuda-nota">Ao premer <strong>"Confirmar e enviar"</strong> o botón queda desactivado mentres dura o envío para evitar reservas duplicadas. Se falla o envío dalgunha sesión, as que xa se enviaran retíranse da táboa. Se o aviso indica que a resposta do servidor non foi lexible, é posible que xa se gardase igualmente — comproba a folla `Reservas` antes de reintentar.</div>
+          <div class="axuda-nota"><strong>Espazo externo</strong>: para actividades fóra do CFR (por exemplo, un pavillón doutro centro). Pide indicar onde se realiza; combínase con espazos do CFR na mesma reserva.</div>
           <div class="axuda-nota">A hora de fin debe ser posterior á de inicio, e non se pode previsualizar/enviar con sesións sen data ou horario.</div>
           <div class="axuda-nota">Se pechas ou recargas a pestana con cambios sen enviar, o navegador pedirache confirmación.</div>
           <div class="axuda-nota">Se un envío falla por un erro do propio sistema (non de conexión), queda rexistrado automaticamente na folla <strong>Erros</strong> do Sheet, coa data, a mensaxe e os datos que se intentaron enviar.</div>
@@ -2448,7 +2452,7 @@ function renderMes(mesIdx, ano, rFiltradas, grande) {
     celas += `<div class="mes-dia${outroMes?' outro-mes':''}${esHoxe?' hoxe':''}" style="${estilo}${altoCela}">
       <div class="mes-dia-num" style="${esDomingo?'color:#bbb':''}">${cur.getDate()}</div>
       ${!esDomingo ? evs.map(r => `<div class="evento ${r.estado.toLowerCase()}" onclick='verDetalle(${r.id})' title="${r.espazos} · ${r.asesora} · ${r.horaInicio}–${r.horaFin}">
-        ${r.espazos.split(';')[0].trim().replace('Aula ','A').replace('Salón de actos','Sal').replace('Polo ','P')} ${r.asesora}${r.codigo?' '+r.codigo:''}
+        ${r.espazos.split(';')[0].trim().replace('Aula ','A').replace('Salón de actos','Sal').replace('Polo ','P').replace('Espazo externo','Ext.')} ${r.asesora}${r.codigo?' '+r.codigo:''}
       </div>`).join('') : ''}
     </div>`;
     cur.setDate(cur.getDate() + 1);
