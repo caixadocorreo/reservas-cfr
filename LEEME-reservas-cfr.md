@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 11/09/2026 (nova pestana Informes de ocupación, con descarga en PDF)*
+*Última actualización: 17/09/2026 (Espazo externo, distinción entre fallo de rede e resposta ambigua do servidor)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -126,6 +126,9 @@ Só visible para tipos de sesión única (Reunión interna, Videoconferencia, Do
 | `Aula 6` | 1º andar | Non |
 | `Aula 7` | 2º andar | Non |
 | `Aula 8` | 2º andar | Non |
+| `Espazo externo` | — | Si (sempre visible) |
+
+**Espazo externo**: para actividades que se desenvolven fóra do CFR por necesidade de instalacións (por exemplo, un pavillón cedido por un centro educativo para iniciación a deportes urbanos). Ao seleccionalo, aparece un campo obrigatorio **"Onde se realiza (centro, enderezo…)"**; ese detalle engádese automaticamente ás Observacións como `[Espazo externo: <texto>]`. Pódese combinar cun espazo do CFR na mesma reserva. Non está suxeito ao filtro de mobilidade reducida nin á detección de conflitos de espazo (por ser un cubo xenérico, non un espazo físico único que se poida dobre-reservar dende aquí), pero **si** conta como unha barra propia nos informes de ocupación (§3).
 
 ### Paso 4 — Sesións (só AFI e Formación PFPP)
 Táboa onde se engade unha fila por cada día de formación:
@@ -170,6 +173,10 @@ Antes de enviar móstrase un resumo completo. Ao confirmar, xérase unha fila no
 **Detección de conflitos de espazo**: ao previsualizar, a aplicación comproba se algún dos espazos seleccionados xa ten unha reserva `Pendente` ou `Aprobada` na mesma data cun horario que se solapa, e se é así móstrase un aviso laranxa co detalle do conflito (espazo, data, horario, tipo e persoa da reserva existente). É un **aviso, non un bloqueo**: a persoa pode confirmar igualmente a reserva a pesar do aviso, xa que a decisión final correspóndelle á persoa responsable na aprobación. Como o calendario se actualiza cada 60 segundos, en casos moi puntuais (reservas feitas segundos antes) podería non detectarse un conflito real.
 
 O botón **Confirmar e enviar** desactívase automaticamente mentres dura o envío (amosa "Enviando...") para evitar reservas duplicadas por premer varias veces seguidas.
+
+**Se falla o envío**, a aplicación distingue dous casos e retira da lista as sesións xa enviadas correctamente en ambos:
+- **Fallo de conexión real** (a petición nunca chegou ao servidor): é seguro premer "Confirmar e enviar" de novo, xa reintentará só o que falta.
+- **Resposta non lexible do servidor**: a petición *si* chegou e puido gardarse igualmente, pero o navegador non recibiu unha resposta que puidese interpretar (pode ocorrer por particularidades das Web Apps de Apps Script). Neste caso o aviso indícao explicitamente e recomenda **comprobar a folla `Reservas` antes de reintentar**, para non duplicar datos que xa estean gardados.
 
 **Aviso por peche accidental**: se se toca calquera campo do formulario de Nova reserva e se intenta pechar ou recargar a pestana sen enviar, o navegador mostra un aviso de confirmación para evitar perder o traballo sen querer.
 
