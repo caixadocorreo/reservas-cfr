@@ -2141,23 +2141,39 @@ async function enviarReserva() {
 
   // Enviar ao Apps Script (unha petición por payload; cada unha independente)
   let erros = 0;
+  let huboAmbiguos = false;
   if (APPS_SCRIPT_URL !== 'PENDENTE_URL_APPS_SCRIPT') {
     for (let i = 0; i < payloads.length; i++) {
+      let resp;
       try {
-        const resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payloads[i]) });
-        const resultado = await resp.json();
-        if (resultado.resultado !== 'OK') {
-          throw new Error(resultado.mensaxe || 'O servidor devolveu un erro sen detalle');
-        }
-        // Se esta fila se enviou ben, retírase do formulario para non duplicala nun reintento
-        const filaId = payloadFilaIds[i];
-        if (filaId) {
-          const fila = document.getElementById(`sesion-fila-${filaId}`);
-          if (fila) fila.remove();
-        }
-      } catch(e) {
-        console.error('Erro ao enviar payload:', e);
+        resp = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payloads[i]) });
+      } catch (eRede) {
+        // A petición nunca chegou ao servidor (sen conexión, etc.) — seguro reintentar.
+        console.error('Erro de rede ao enviar payload:', eRede);
         erros++;
+        continue;
+      }
+      let resultado;
+      try {
+        resultado = await resp.json();
+      } catch (eParse) {
+        // A petición SI chegou ao servidor (puido executarse e gardar a fila), pero non
+        // puidemos ler a resposta — non sabemos con certeza se se gardou ou non.
+        console.error('Resposta non lexible do servidor (envío ambiguo):', eParse);
+        erros++;
+        huboAmbiguos = true;
+        continue;
+      }
+      if (resultado.resultado !== 'OK') {
+        console.error('O servidor devolveu erro:', resultado.mensaxe);
+        erros++;
+        continue;
+      }
+      // Se esta fila se enviou ben, retírase do formulario para non duplicala nun reintento
+      const filaId = payloadFilaIds[i];
+      if (filaId) {
+        const fila = document.getElementById(`sesion-fila-${filaId}`);
+        if (fila) fila.remove();
       }
     }
   }
@@ -2170,7 +2186,10 @@ async function enviarReserva() {
   } else {
     actualizarContaSesions();
     const enviados = payloads.length - erros;
-    mostrarAlerta('erro', `⚠️ Enviáronse ${enviados} de ${payloads.length} rexistro(s). ${erros} fallaron por un problema de conexión. As sesións xa enviadas retiráronse desta lista — comproba a folla de Reservas e preme "Confirmar e enviar" de novo para reintentar só o que falta.`);
+    const mensaxe = huboAmbiguos
+      ? `⚠️ Enviáronse ${enviados} de ${payloads.length} rexistro(s) con confirmación clara. Dos outros ${erros}, o navegador non recibiu unha resposta lexible do servidor — É POSIBLE QUE XA SE GARDASEN. Antes de premer "Confirmar e enviar" outra vez, comproba a folla de Reservas para non duplicar datos.`
+      : `⚠️ Enviáronse ${enviados} de ${payloads.length} rexistro(s). ${erros} fallaron por un problema de conexión. As sesións xa enviadas retiráronse desta lista — comproba a folla de Reservas e preme "Confirmar e enviar" de novo para reintentar só o que falta.`;
+    mostrarAlerta('erro', mensaxe);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     btnEnviar.disabled = false;
     btnEnviar.textContent = textoOrixinalBtn;
