@@ -2704,11 +2704,19 @@ function exportarSemana() {
   seleccionadas.forEach(r => {
     const [ra,rm,rd] = r.data.split('-');
     const dataFmt = `${rd}/${rm}/${ra}`;
-    const espazos = r.espazos.split(';').map(e => e.trim()).filter(Boolean);
+    const espazos = r.espazos.split(';').map(e => e.trim()).filter(Boolean).filter(e => e !== 'Espazo externo');
     espazos.forEach(espazo => {
       liñas.push(`${dataFmt}	${espazo}	${r.codigo}	${r.titulo}	${r.relator||''}	${r.horaInicio}	${r.horaFin}`);
     });
   });
+
+  if (liñas.length === 0) {
+    aviso.style.display = 'block';
+    aviso.textContent = 'Non hai reservas Aprobadas de tipo Formación en espazos do CFR nesta semana (só actividade en espazos externos, que non se inclúe na cartelería).';
+    document.getElementById('csv-semana-contido').textContent = '';
+    document.getElementById('modal-exportar').classList.add('aberto');
+    return;
+  }
 
   // Ordenar por data e hora
   liñas.sort();
