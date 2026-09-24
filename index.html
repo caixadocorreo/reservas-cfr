@@ -1137,7 +1137,16 @@
               <option value="Videoconferencia">Videoconferencia</option>
               <option value="Docencia compartida PFPP">Docencia compartida PFPP</option>
               <option value="Docencia compartida AFC">Docencia compartida AFC</option>
+              <option value="Cesión de espazo a terceiros">Cesión de espazo a terceiros</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Cesión a terceiros: quen o solicita -->
+        <div id="campo-cesion-solicitante" style="display:none;margin-bottom:16px">
+          <div class="campo">
+            <label>Quen o solicita (entidade, centro, persoa de contacto…) *</label>
+            <input type="text" id="cesion-solicitante" placeholder="Ex: IES Rosalía de Castro — Dpto. Orientación">
           </div>
         </div>
 
@@ -1170,7 +1179,7 @@
       <div class="form-card">
         <h3>2. Data e horario</h3>
         <p id="aviso-multisesion" style="display:none;font-size:13px;color:#007bc4;background:#e8f4fc;padding:8px 12px;border-radius:6px;margin-bottom:14px">
-          ℹ️ Para AFI e Formación PFPP, o horario introdúcese por sesión no paso 4.
+          ℹ️ Para AFI, Formación PFPP e Cesión de espazo a terceiros, o horario introdúcese por sesión no paso 4.
         </p>
         <div id="campos-data-horario">
         <div class="form-grid tres">
@@ -1350,7 +1359,8 @@
           <p>Espazos accesibles (mobilidade reducida): Aula 0, Salón de actos, Polo A, Polo B.</p>
           <p style="margin-top:8px">Relator/a(s): separar por <span class="axuda-tag">;</span> se hai varias persoas.</p>
           <div class="axuda-nota">Selector <strong>"Horario predefinido"</strong> (Paso 2 e en cada fila de sesión): preenche automaticamente franxas de tarde habituais (16:30–19:30, 16:30–20:30, 17:00–20:00, 17:00–21:00). Escolle "Persoalizado" para escribir calquera outro horario a man.</div>
-          <div class="axuda-nota">Para AFI e Formación PFPP, engade unha fila por cada sesión na táboa. O relator/a e os recursos poden variar por sesión.</div>
+          <div class="axuda-nota">Para AFI, Formación PFPP e Cesión de espazo a terceiros, engade unha fila por cada sesión na táboa. O relator/a e os recursos poden variar por sesión.</div>
+          <div class="axuda-nota"><strong>Cesión de espazo a terceiros</strong>: para cando unha entidade externa ou outro centro solicita un espazo do CFR. Pide indicar quen o solicita; si aparece na cartelería TV, a diferenza de "Espazo externo".</div>
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
           <div class="axuda-nota">Enlace <strong>"+ outro recurso"</strong>: para os casos pouco habituais nos que unha sesión precisa dous recursos á vez (por exemplo, kit de radio e un carro de portátiles).</div>
           <div class="axuda-nota">Se dúas sesións da mesma reserva teñen datas e horarios que se solapan, a aplicación bloquea o envío ata que se corrixa (erro típico ao duplicar e esquecer cambiar a data).</div>
@@ -1372,7 +1382,7 @@
       <div class="axuda-seccion">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">📋 Exportar para cartelería TV <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
-          <p>Na vista <strong>Semana</strong>, o botón <strong>"📋 Exportar semana para Sesións"</strong> xera os datos das reservas Aprobadas de tipo AFI e Formación PFPP, listo para copiar e pegar na folla de Sesións da cartelería TV.</p>
+          <p>Na vista <strong>Semana</strong>, o botón <strong>"📋 Exportar semana para Sesións"</strong> xera os datos das reservas Aprobadas de tipo AFI, Formación PFPP ou Cesión de espazo a terceiros, listo para copiar e pegar na folla de Sesións da cartelería TV. As reservas en "Espazo externo" nunca se inclúen, sexa cal sexa o tipo.</p>
         </div>
       </div>
       <div class="axuda-seccion">
@@ -1651,9 +1661,9 @@ let contadorSesions = 0;
 
 function actualizarTipoActividade() {
   const tipo = document.getElementById('res-tipo').value;
-  const tiposConCodigo = ['AFI', 'Formación PFPP'];
+  const tiposConCodigo = ['AFI', 'Formación PFPP', 'Cesión de espazo a terceiros'];
   const tiposConCatalogo = ['AFI', 'Formación PFPP'];
-  const tiposMultisesion = ['AFI', 'Formación PFPP'];
+  const tiposMultisesion = ['AFI', 'Formación PFPP', 'Cesión de espazo a terceiros'];
 
   const tenCodigo = tiposConCodigo.includes(tipo);
   const tenCatalogo = tiposConCatalogo.includes(tipo);
@@ -1661,6 +1671,7 @@ function actualizarTipoActividade() {
 
   document.getElementById('campos-formacion').style.display = tenCodigo ? 'block' : 'none';
   document.getElementById('campos-catalogo').style.display = tenCatalogo ? 'block' : 'none';
+  document.getElementById('campo-cesion-solicitante').style.display = tipo === 'Cesión de espazo a terceiros' ? 'block' : 'none';
   document.getElementById('card-sesions').style.display = esMultisesion ? 'block' : 'none';
   document.getElementById('card-recursos-global').style.display = !esMultisesion ? 'block' : 'none';
   document.getElementById('campos-data-horario').style.display = esMultisesion ? 'none' : 'block';
@@ -1705,14 +1716,27 @@ function opcionsFranxas() {
 // Se se escolleu "Espazo externo", esixe o detalle de onde se fai e engádeo ás
 // Observacións; devolve null (e avisa) se falta ese detalle.
 function calcularObservacionsFinais() {
-  const base = document.getElementById('res-observacions').value;
-  if (!espazosSeleccionados.includes('Espazo externo')) return base;
-  const detalle = document.getElementById('espazo-externo-detalle').value.trim();
-  if (!detalle) {
-    alert('Indica onde se realiza a actividade (centro, enderezo…) no campo baixo "Espazo externo".');
-    return null;
+  let obs = document.getElementById('res-observacions').value;
+
+  if (espazosSeleccionados.includes('Espazo externo')) {
+    const detalle = document.getElementById('espazo-externo-detalle').value.trim();
+    if (!detalle) {
+      alert('Indica onde se realiza a actividade (centro, enderezo…) no campo baixo "Espazo externo".');
+      return null;
+    }
+    obs = (obs ? obs + ' ' : '') + `[Espazo externo: ${detalle}]`;
   }
-  return (base ? base + ' ' : '') + `[Espazo externo: ${detalle}]`;
+
+  if (document.getElementById('res-tipo').value === 'Cesión de espazo a terceiros') {
+    const solicitante = document.getElementById('cesion-solicitante').value.trim();
+    if (!solicitante) {
+      alert('Indica quen solicita a cesión do espazo (entidade, centro, persoa de contacto…).');
+      return null;
+    }
+    obs = (obs ? obs + ' ' : '') + `[Solicitado por: ${solicitante}]`;
+  }
+
+  return obs;
 }
 
 function validarHorariosSesions(sesions) {
@@ -2212,6 +2236,8 @@ function limparFormulario() {
   document.getElementById('res-titulo').value = '';
   document.getElementById('res-observacions').value = '';
   if (document.getElementById('res-relator')) document.getElementById('res-relator').value = '';
+  document.getElementById('cesion-solicitante').value = '';
+  document.getElementById('campo-cesion-solicitante').style.display = 'none';
   if (document.getElementById('res-catalogo')) document.getElementById('res-catalogo').value = '';
   document.getElementById('sesions-body').innerHTML = '';
   sesionsMultiple = [];
@@ -2681,7 +2707,7 @@ function exportarSemana() {
   });
 
   // Filtrar reservas aprobadas de formación nesa semana
-  const tiposFormacion = ['AFI', 'Formación PFPP', 'Formación'];
+  const tiposFormacion = ['AFI', 'Formación PFPP', 'Formación', 'Cesión de espazo a terceiros'];
   const seleccionadas = reservas.filter(r =>
     datasSemana.includes(r.data) &&
     r.estado === 'Aprobada' &&

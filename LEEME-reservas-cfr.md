@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 17/09/2026 (Espazo externo, distinción entre fallo de rede e resposta ambigua do servidor)*
+*Última actualización: 17/09/2026 (novo tipo "Cesión de espazo a terceiros")*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -61,7 +61,7 @@ En todas as vistas aparece o botón **🖨️ Descargar PDF** que abre o diálog
 - Cores por estado conservadas
 
 ### Exportar semana para Sesións (cartelería TV)
-Na vista **Semana** aparece tamén o botón **📋 Exportar semana para Sesións**, que abre unha xanela cos datos tabulados das reservas Aprobadas (tipo AFI ou Formación PFPP) da semana efectivamente seleccionada nesa vista, listos para copiar (botón **Copiar**) e pegar na folla de Sesións da cartelería TV.
+Na vista **Semana** aparece tamén o botón **📋 Exportar semana para Sesións**, que abre unha xanela cos datos tabulados das reservas Aprobadas (tipo AFI, Formación PFPP ou Cesión de espazo a terceiros) da semana efectivamente seleccionada nesa vista, listos para copiar (botón **Copiar**) e pegar na folla de Sesións da cartelería TV. As reservas en "Espazo externo" nunca se inclúen aquí (aínda que sexan doutro tipo), xa que a TV só reflicte actividade presencial no CFR.
 
 **Importante**: a semana que se exporta é a que marcan as frechas ‹ › **dentro da propia vista Semana**, non a que se estea a ver noutra vista (Mes, Set–Dec, etc.). Se navegaches a outra semana na vista Semana e despois miraches o calendario noutra vista, ao volver a exportar seguirá a usar a última semana navegada na vista Semana. Antes de exportar, comproba que a data que aparece na cabeceira do calendario (ao carón das frechas) coincide coa semana que queres.
 
@@ -98,8 +98,11 @@ Botón **"🖨️ Descargar PDF"** (aparece despois de xerar un informe). Reutil
 - **Videoconferencia** → sen código nin sesións múltiples
 - **Docencia compartida PFPP** → sen código nin sesións múltiples
 - **Docencia compartida AFC** → sen código nin sesións múltiples
+- **Cesión de espazo a terceiros** → campos de código/título libres (sen catálogo) e táboa de sesións múltiples, coma AFI
 
 Para **AFI** e **Formación PFPP** aparece un despregable de **catálogo** que auto-enche o código e o título. Se a actividade non está no catálogo, escríbese manualmente.
+
+**Cesión de espazo a terceiros**: para cando unha entidade externa ou outro centro da rede de formación solicita usar un espazo do CFR para algo que non depende de nós (presentacións, continuación de actividades centralizadas con profesorado do ámbito do noso centro, etc.). Ao escoller este tipo, aparece un campo obrigatorio **"Quen o solicita (entidade, centro, persoa de contacto…)"**, que se engade automaticamente ás Observacións como `[Solicitado por: <texto>]`. Esta actividade **si** se inclúe na exportación para a cartelería TV (a diferenza de "Espazo externo"), xa que aquí o profesorado está fisicamente no CFR.
 
 ### Paso 2 — Data e horario
 Só visible para tipos de sesión única (Reunión interna, Videoconferencia, Docencias compartidas).
@@ -130,7 +133,7 @@ Só visible para tipos de sesión única (Reunión interna, Videoconferencia, Do
 
 **Espazo externo**: para actividades que se desenvolven fóra do CFR por necesidade de instalacións (por exemplo, un pavillón cedido por un centro educativo para iniciación a deportes urbanos). Ao seleccionalo, aparece un campo obrigatorio **"Onde se realiza (centro, enderezo…)"**; ese detalle engádese automaticamente ás Observacións como `[Espazo externo: <texto>]`. Pódese combinar cun espazo do CFR na mesma reserva. Non está suxeito ao filtro de mobilidade reducida nin á detección de conflitos de espazo (por ser un cubo xenérico, non un espazo físico único que se poida dobre-reservar dende aquí), pero **si** conta como unha barra propia nos informes de ocupación (§3).
 
-### Paso 4 — Sesións (só AFI e Formación PFPP)
+### Paso 4 — Sesións (AFI, Formación PFPP e Cesión de espazo a terceiros)
 Táboa onde se engade unha fila por cada día de formación:
 
 | Campo | Contido |
