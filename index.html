@@ -1978,7 +1978,7 @@ function previsualizar() {
   const cafe = document.querySelector('input[name="cafe"]:checked')?.value;
   const mob = document.querySelector('input[name="mobilidade"]:checked')?.value;
 
-  const tiposMultisesion = ['AFI', 'Formación PFPP'];
+  const tiposMultisesion = ['AFI', 'Formación PFPP', 'Cesión de espazo a terceiros'];
   const esMultisesion = tiposMultisesion.includes(tipo);
 
   if (!tipo || espazosSeleccionados.length === 0) {
@@ -2105,7 +2105,7 @@ async function enviarReserva() {
     btnEnviar.textContent = textoOrixinalBtn;
     return;
   }
-  const tiposMultisesion = ['AFI', 'Formación PFPP'];
+  const tiposMultisesion = ['AFI', 'Formación PFPP', 'Cesión de espazo a terceiros'];
   const esMultisesion = tiposMultisesion.includes(tipo);
   const sesions = esMultisesion ? lerSesions() : [];
 
