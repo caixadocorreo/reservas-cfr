@@ -931,7 +931,7 @@
     .evento { font-size: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .multi-mes-grid.catro { grid-template-columns: repeat(2, 1fr); }
     .multi-mes-grid.tres { grid-template-columns: repeat(3, 1fr); }
-    #informe-controis-card { display: none !important; }
+    #informe-controis-card, #calefaccion-card { display: none !important; }
     .informe-tarxeta, .informe-bloque { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
     .informe-barra-encher { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     @page { margin: 1.5cm; size: A4 landscape; }
@@ -1116,6 +1116,35 @@
 
       <div id="informe-cabeceira-dyn" class="pdf-cabeceira"></div>
       <div id="informe-resultado"></div>
+
+      <div class="form-card" id="calefaccion-card" style="margin-top:20px">
+        <h3>🔥 Recordatorios de calefacción (.ics)</h3>
+        <p style="font-size:13px;color:#555;margin-bottom:12px">Xera un ficheiro de calendario coa lista de espazos que hai que deixar cos acumuladores acesos, a partir das reservas <strong>Aprobadas</strong> (todos os tipos; sen contar "Espazo externo"). Importa o ficheiro no calendario (Google Calendar, Outlook…).</p>
+        <div class="form-grid tres">
+          <div class="campo">
+            <label>Actividades do período</label>
+            <select id="cal-ics-periodo" onchange="actualizarVisibilidadeDatasICS()">
+              <option value="14">Próximas 2 semanas</option>
+              <option value="28">Próximas 4 semanas</option>
+              <option value="mes-actual">Este mes</option>
+              <option value="mes-seguinte">Mes seguinte</option>
+              <option value="personalizado">Personalizado…</option>
+            </select>
+          </div>
+          <div class="campo" id="cal-ics-desde-campo" style="display:none">
+            <label>Desde</label>
+            <input type="date" id="cal-ics-desde">
+          </div>
+          <div class="campo" id="cal-ics-ata-campo" style="display:none">
+            <label>Ata</label>
+            <input type="date" id="cal-ics-ata">
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <button class="btn btn-primario" onclick="exportarCalefaccionICS()">📅 Exportar calefacción (.ics)</button>
+        </div>
+        <div id="cal-ics-resultado" style="margin-top:12px;font-size:13px"></div>
+      </div>
     </div>
 
     <!-- ================================================
@@ -1383,6 +1412,19 @@
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">📋 Exportar para cartelería TV <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <p>Na vista <strong>Semana</strong>, o botón <strong>"📋 Exportar semana para Sesións"</strong> xera os datos das reservas Aprobadas de tipo AFI, Formación PFPP ou Cesión de espazo a terceiros, listo para copiar e pegar na folla de Sesións da cartelería TV. As reservas en "Espazo externo" nunca se inclúen, sexa cal sexa o tipo.</p>
+        </div>
+      </div>
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🔥 Recordatorios de calefacción (.ics) <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <p>Na pestana <strong>Informes</strong>, o cadro <strong>"Recordatorios de calefacción"</strong> xera un ficheiro <span class="axuda-tag">.ics</span> para importar no calendario. Inclúe só reservas <strong>Aprobadas</strong> (todos os tipos) en espazos do CFR; "Espazo externo" non conta.</p>
+          <ul>
+            <li><strong>Luns</strong> → recordatorio o <strong>domingo</strong> ás 20:00.</li>
+            <li><strong>Martes, mércores e xoves</strong> → recordatorio o día anterior ás 20:00.</li>
+            <li><strong>Venres e sábado</strong> → un único recordatorio o <strong>xoves ás 10:00</strong>, cos espazos de cada día e o aviso de <strong>calefacción e alarma</strong>. Se non hai actividade venres nin sábado, non hai recordatorio o xoves.</li>
+          </ul>
+          <p>Cada recordatorio dura 30 minutos e avisa ao comezo. Por defecto cóbrense as <strong>próximas 2 semanas</strong>; pódese elixir outro período.</p>
+          <div class="axuda-nota">Ao volver importar o ficheiro actualízanse os eventos do mesmo día sen duplicalos. Pero se unha reserva se cancela ou se rexeita, o evento <strong>non se elimina</strong> do calendario: hai que borralo a man. Convén volver exportar despois de aprobar reservas novas.</div>
         </div>
       </div>
       <div class="axuda-seccion">
@@ -2750,6 +2792,161 @@ function exportarSemana() {
   const cabeceira = 'Data	Aula	Código	Título	Relator	HoraInicio	HoraFin';
   document.getElementById('csv-semana-contido').textContent = cabeceira + '\n' + liñas.join('\n');
   document.getElementById('modal-exportar').classList.add('aberto');
+}
+
+// ============================================================
+// RECORDATORIOS DE CALEFACCIÓN (.ics)
+// ============================================================
+function actualizarVisibilidadeDatasICS() {
+  const pers = document.getElementById('cal-ics-periodo').value === 'personalizado';
+  document.getElementById('cal-ics-desde-campo').style.display = pers ? '' : 'none';
+  document.getElementById('cal-ics-ata-campo').style.display = pers ? '' : 'none';
+}
+
+function icsEscapar(t) {
+  return String(t).replace(/\\/g,'\\\\').replace(/;/g,'\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+}
+
+// Pliegue de liñas a 75 octetos (RFC 5545), sen partir caracteres UTF-8
+function icsPregar(liña) {
+  const enc = new TextEncoder();
+  if (enc.encode(liña).length <= 75) return liña;
+  const partes = [];
+  let actual = '', bytes = 0, limite = 75;
+  for (const ch of liña) {
+    const b = enc.encode(ch).length;
+    if (bytes + b > limite) {
+      partes.push(actual);
+      actual = ''; bytes = 0; limite = 74; // o espazo inicial das continuacións conta
+    }
+    actual += ch; bytes += b;
+  }
+  partes.push(actual);
+  return partes.join('\r\n ');
+}
+
+function icsData(str) { // 'YYYY-MM-DD' -> Date ao mediodía local (evita problemas de cambio horario)
+  const [a,m,d] = str.split('-').map(Number);
+  return new Date(a, m-1, d, 12, 0, 0);
+}
+function icsSumarDias(str, n) { const d = icsData(str); d.setDate(d.getDate()+n); return fmt(d); }
+
+// Devolve [{dataEntrada, hora, tipo:'diaria'|'xoves', liñas:[...], diasActividade:[...]}]
+function calcularEntradasCalefaccion(desde, ata) {
+  const DIAS = ['domingo','luns','martes','mércores','xoves','venres','sábado'];
+  const porDia = {}; // data -> { espazo -> [horarios] }
+  reservas.forEach(r => {
+    if (r.estado !== 'Aprobada' || !r.data || r.data < desde || r.data > ata) return;
+    (r.espazos || '').split(';').map(e => e.trim()).filter(e => e && e !== 'Espazo externo').forEach(e => {
+      porDia[r.data] = porDia[r.data] || {};
+      porDia[r.data][e] = porDia[r.data][e] || [];
+      if (r.horaInicio) porDia[r.data][e].push(`${r.horaInicio}–${r.horaFin}`);
+    });
+  });
+  const descDia = (data) => Object.keys(porDia[data]).sort((a,b) => a.localeCompare(b,'gl',{numeric:true}))
+    .map(e => `${e} (${porDia[data][e].sort().join(', ')})`);
+  const fmtCurto = (data) => { const [a,m,d] = data.split('-'); return `${d}/${m}`; };
+
+  const entradas = {};
+  Object.keys(porDia).sort().forEach(data => {
+    const dow = icsData(data).getDay(); // 0 dom … 6 sáb
+    if (dow === 0) return; // domingo: non hai actividade prevista
+    if (dow >= 1 && dow <= 4) {
+      const entrada = icsSumarDias(data, -1);
+      entradas[entrada] = { dataEntrada: entrada, hora: '200000', tipo: 'diaria', diasActividade: [data],
+        resumo: 'Calefacción: deixar acumuladores acesos',
+        descricion: `Espazos a deixar acesos para a actividade de ${DIAS[dow]} ${fmtCurto(data)}:\n` + descDia(data).map(x => '• ' + x).join('\n') };
+    } else { // venres (5) ou sábado (6): entrada conxunta o xoves
+      const xoves = icsSumarDias(data, dow === 5 ? -1 : -2);
+      if (!entradas[xoves]) entradas[xoves] = { dataEntrada: xoves, hora: '100000', tipo: 'xoves', diasActividade: [], bloques: {} };
+      entradas[xoves].diasActividade.push(data);
+      entradas[xoves].bloques[data] = `${DIAS[dow].toUpperCase()} ${fmtCurto(data)}:\n` + descDia(data).map(x => '• ' + x).join('\n');
+    }
+  });
+  Object.values(entradas).forEach(en => {
+    if (en.tipo === 'xoves') {
+      en.resumo = 'Calefacción e ALARMA: espazos de venres/sábado';
+      en.descricion = 'Deixar acumuladores acesos e acender a ALARMA.\n\n' + en.diasActividade.sort().map(d => en.bloques[d]).join('\n\n');
+    }
+  });
+  return Object.values(entradas).sort((a,b) => a.dataEntrada.localeCompare(b.dataEntrada));
+}
+
+function xerarTextoICS(entradas) {
+  const agora = new Date();
+  const p2 = n => String(n).padStart(2,'0');
+  const stamp = `${agora.getUTCFullYear()}${p2(agora.getUTCMonth()+1)}${p2(agora.getUTCDate())}T${p2(agora.getUTCHours())}${p2(agora.getUTCMinutes())}${p2(agora.getUTCSeconds())}Z`;
+  const seq = Math.floor(agora.getTime() / 60000); // crece sempre: permite que a reimportación actualice o evento
+  const L = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CFR de Vigo//Reservas calefaccion//GL','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'X-WR-CALNAME:Calefacción CFR','X-WR-TIMEZONE:Europe/Madrid',
+    'BEGIN:VTIMEZONE','TZID:Europe/Madrid',
+    'BEGIN:DAYLIGHT','TZOFFSETFROM:+0100','TZOFFSETTO:+0200','TZNAME:CEST','DTSTART:19700329T020000','RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU','END:DAYLIGHT',
+    'BEGIN:STANDARD','TZOFFSETFROM:+0200','TZOFFSETTO:+0100','TZNAME:CET','DTSTART:19701025T030000','RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU','END:STANDARD',
+    'END:VTIMEZONE'
+  ];
+  entradas.forEach(en => {
+    const d = en.dataEntrada.replace(/-/g,'');
+    const hIni = en.hora;
+    const hFin = en.hora.slice(0,2) + '3000';
+    L.push('BEGIN:VEVENT',
+      `UID:calefaccion-${d}@reservas-cfr`,
+      `DTSTAMP:${stamp}`,
+      `SEQUENCE:${seq}`,
+      `DTSTART;TZID=Europe/Madrid:${d}T${hIni}`,
+      `DTEND;TZID=Europe/Madrid:${d}T${hFin}`,
+      `SUMMARY:${icsEscapar('🔥 ' + en.resumo)}`,
+      `DESCRIPTION:${icsEscapar(en.descricion)}`,
+      'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${icsEscapar(en.resumo)}`,'TRIGGER:PT0S','END:VALARM',
+      'END:VEVENT');
+  });
+  L.push('END:VCALENDAR');
+  return L.map(icsPregar).join('\r\n') + '\r\n';
+}
+
+function exportarCalefaccionICS() {
+  const res = document.getElementById('cal-ics-resultado');
+  const sel = document.getElementById('cal-ics-periodo').value;
+  const hoxe = new Date(); hoxe.setHours(12,0,0,0);
+  let desde, ata;
+  if (sel === '14' || sel === '28') {
+    desde = fmt(hoxe); const f = new Date(hoxe); f.setDate(f.getDate() + parseInt(sel) - 1); ata = fmt(f);
+  } else if (sel === 'mes-actual' || sel === 'mes-seguinte') {
+    const off = sel === 'mes-seguinte' ? 1 : 0;
+    desde = fmt(new Date(hoxe.getFullYear(), hoxe.getMonth() + off, 1, 12));
+    ata = fmt(new Date(hoxe.getFullYear(), hoxe.getMonth() + off + 1, 0, 12));
+  } else {
+    desde = document.getElementById('cal-ics-desde').value;
+    ata = document.getElementById('cal-ics-ata').value;
+    if (!desde || !ata) { res.innerHTML = '<span style="color:#c62828">Indica as datas "Desde" e "Ata".</span>'; return; }
+    if (desde > ata) { res.innerHTML = '<span style="color:#c62828">A data "Desde" non pode ser posterior a "Ata".</span>'; return; }
+  }
+  const hoxeStr = fmt(hoxe);
+  const todas = calcularEntradasCalefaccion(desde, ata);
+  const entradas = todas.filter(e => e.dataEntrada >= hoxeStr); // non xerar recordatorios do pasado
+  const omitidas = todas.length - entradas.length;
+  if (entradas.length === 0) {
+    res.innerHTML = '<span style="color:#c62828">Non hai reservas Aprobadas en espazos do CFR nese período que precisen recordatorio futuro. Non se xerou ningún ficheiro.</span>';
+    return;
+  }
+  const texto = xerarTextoICS(entradas);
+  const blob = new Blob([texto], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `calefaccion-cfr-${desde}_${ata}.ics`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const lista = entradas.map(e => {
+    const [y,m,d] = e.dataEntrada.split('-');
+    const h = e.hora === '200000' ? '20:00' : '10:00';
+    return `<li><strong>${d}/${m}/${y} ${h}</strong> — ${esc(e.resumo)}<br><span style="color:#555;white-space:pre-line">${esc(e.descricion)}</span></li>`;
+  }).join('');
+  res.innerHTML = `<div style="color:#2e7d32;font-weight:600;margin-bottom:6px">✓ Ficheiro xerado con ${entradas.length} recordatorio${entradas.length>1?'s':''}.</div>`
+    + (omitidas ? `<div style="color:#8a6d00;margin-bottom:6px">${omitidas} recordatorio${omitidas>1?'s':''} do pasado non se incluíron.</div>` : '')
+    + `<ul style="margin:0 0 8px 18px">${lista}</ul>`
+    + `<div style="color:#555">Ao volver importar o ficheiro, os eventos existentes actualízanse (non se duplican). Se unha reserva se cancela ou se rexeita, o seu evento <strong>non se borra</strong> automaticamente do calendario: haberá que eliminalo a man.</div>`;
 }
 
 function copiarSemana() {

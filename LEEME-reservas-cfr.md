@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 17/09/2026 (novo tipo "Cesión de espazo a terceiros")*
+*Última actualización: 25/10/2026 (exportación .ics de recordatorios de calefacción)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -84,6 +84,32 @@ Os gráficos son barras HTML/CSS sinxelas, sen ningunha libraría externa — co
 
 ### Descargar en PDF
 Botón **"🖨️ Descargar PDF"** (aparece despois de xerar un informe). Reutiliza o mesmo mecanismo de impresión do navegador que xa usa o calendario (A4 apaisado): xera unha cabeceira co período e agocha os controis do formulario, deixando só o resultado.
+
+### Recordatorios de calefacción (.ics)
+Na parte inferior da pestana Informes, o cadro **"🔥 Recordatorios de calefacción (.ics)"** xera un ficheiro de calendario para importar en Google Calendar, Outlook, etc. Serve para lembrar que espazos hai que deixar cos acumuladores acesos o día anterior.
+
+**Que inclúe**
+- Só reservas en estado `Aprobada`, de todos os tipos.
+- Todos os espazos do CFR, **excepto "Espazo externo"**.
+
+**Regras dos recordatorios**
+
+| Actividade | Recordatorio | Hora |
+|---|---|---|
+| Luns | Domingo anterior | 20:00 |
+| Martes, mércores, xoves | Día anterior (luns, martes, mércores) | 20:00 |
+| Venres e/ou sábado | Un único recordatorio o **xoves**, cos espazos de cada día desagregados e aviso de **calefacción e alarma** | 10:00 |
+
+- Se non hai actividade venres nin sábado, non se crea recordatorio o xoves.
+- Cada evento dura 30 minutos e ten alerta ao comezo.
+- Período por defecto: próximas 2 semanas. Tamén: 4 semanas, este mes, mes seguinte ou datas personalizadas (refírese ás datas das actividades).
+- Non se xeran recordatorios cuxa data xa pasou.
+
+**Importante**
+- Cada evento ten un identificador estable por data. Se volves exportar e importar, os eventos existentes **actualízanse** en vez de duplicarse (o comportamento exacto depende do cliente de calendario; recoméndase comprobalo cunha primeira proba).
+- Se unha reserva se cancela ou se rexeita, o seu evento **non se borra** automaticamente do calendario: hai que eliminalo a man.
+- É unha descarga puntual: non se actualiza soa. Convén volver exportar despois de aprobar reservas novas.
+- Non require cambios no Apps Script.
 
 ---
 
