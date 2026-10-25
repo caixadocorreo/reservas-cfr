@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (exportación .ics de recordatorios de calefacción)*
+*Última actualización: 25/10/2026 (exportación .ics de calefacción con convidadas e menú Axustes)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -110,6 +110,12 @@ Na parte inferior da pestana Informes, o cadro **"🔥 Recordatorios de calefacc
 - Se unha reserva se cancela ou se rexeita, o seu evento **non se borra** automaticamente do calendario: hai que eliminalo a man.
 - É unha descarga puntual: non se actualiza soa. Convén volver exportar despois de aprobar reservas novas.
 - Non require cambios no Apps Script.
+
+**Convidadas por correo (menú ⚙️ Axustes)**
+- A pestana **⚙️ Axustes** permite gardar o correo das **persoas convidadas** (varios, separados por coma) e, opcionalmente, o **correo da organizadora** (o da conta do calendario onde se importa).
+- Se hai convidadas, cada evento do `.ics` leva `ATTENDEE`; se hai tamén organizadora, o ficheiro vai como `METHOD:REQUEST` (convite) e, se non, como `PUBLISH`.
+- **Non está garantido** que Nextcloud ou Google envíen o correo ao importar; depende do cliente. Hai que verificalo cunha proba. Se non chega, unha alternativa é enviar o `.ics` por correo desde o Apps Script.
+- Os axustes gárdanse **só no navegador** (`localStorage`): non se comparten entre equipos e perdense se se limpan os datos do navegador.
 
 ---
 

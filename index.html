@@ -913,7 +913,7 @@
     body { background: white; font-size: 11px; }
     header, nav.nav-tabs, .cal-controis, .lenda,
     #btn-exportar-wrap, #btn-pdf-mes-wrap, .nav-tabs,
-    #panel-nova-reserva, #panel-axuda,
+    #panel-nova-reserva, #panel-axuda, #panel-axustes,
     .modal-overlay { display: none !important; }
     .panel.activo { display: block !important; }
     main { margin: 0; padding: 0; max-width: 100%; }
@@ -1020,6 +1020,7 @@
     <button class="nav-tab" onclick="mostrarPanel('informes')">📊 Informes</button>
     <button class="nav-tab" onclick="mostrarPanel('nova-reserva')">➕ Nova reserva</button>
     <button class="nav-tab" onclick="mostrarPanel('axuda')">❓ Axuda</button>
+    <button class="nav-tab" onclick="mostrarPanel('axustes')">⚙️ Axustes</button>
   </nav>
 
   <main>
@@ -1144,6 +1145,29 @@
           <button class="btn btn-primario" onclick="exportarCalefaccionICS()">📅 Exportar calefacción (.ics)</button>
         </div>
         <div id="cal-ics-resultado" style="margin-top:12px;font-size:13px"></div>
+      </div>
+    </div>
+
+    <!-- ================================================
+         PANEL AXUSTES
+    ================================================ -->
+    <div id="panel-axustes" class="panel">
+      <div class="form-card">
+        <h3>⚙️ Axustes</h3>
+        <p style="font-size:13px;color:#555;margin-bottom:12px">Estes datos gárdanse só neste navegador e neste equipo (non se comparten con outras persoas nin con outros equipos). Se limpas os datos do navegador, haberá que volver escribilos.</p>
+        <h4 style="margin:0 0 8px;font-size:14px">🔥 Recordatorios de calefacción</h4>
+        <div class="campo" style="margin-bottom:12px">
+          <label for="axu-convidados">Persoas convidadas (correos separados por coma)</label>
+          <input type="text" id="axu-convidados" placeholder="persoa1@exemplo.gal, persoa2@exemplo.gal">
+          <div style="font-size:12px;color:#666;margin-top:4px">Engádense como convidadas a cada evento do ficheiro .ics. Se queda baleiro, o ficheiro xérase sen convidadas.</div>
+        </div>
+        <div class="campo" style="margin-bottom:12px">
+          <label for="axu-organizadora">Correo da organizadora (opcional)</label>
+          <input type="email" id="axu-organizadora" placeholder="o correo da conta do calendario onde importas">
+          <div style="font-size:12px;color:#666;margin-top:4px">Recomendado: moitos sistemas só envían o convite se o evento ten organizadora. Debe ser o correo da conta na que importas o ficheiro.</div>
+        </div>
+        <button class="btn btn-primario" onclick="gardarAxustes()">Gardar</button>
+        <div id="axu-resultado" style="margin-top:10px;font-size:13px"></div>
       </div>
     </div>
 
@@ -1423,6 +1447,7 @@
             <li><strong>Martes, mércores e xoves</strong> → recordatorio o día anterior ás 20:00.</li>
             <li><strong>Venres e sábado</strong> → un único recordatorio o <strong>xoves ás 10:00</strong>, cos espazos de cada día e o aviso de <strong>calefacción e alarma</strong>. Se non hai actividade venres nin sábado, non hai recordatorio o xoves.</li>
           </ul>
+          <p>Se en <strong>⚙️ Axustes</strong> indicas unha ou varias <strong>persoas convidadas</strong> (e, recomendado, o <strong>correo da organizadora</strong>, que é o da conta onde importas), o ficheiro inclúe os convites. Algúns calendarios (Nextcloud, Google) poden enviar un correo ao importar; non está garantido, comprobao cunha proba. Os axustes gárdanse só neste navegador.</p>
           <p>Cada recordatorio dura 30 minutos e avisa ao comezo. Por defecto cóbrense as <strong>próximas 2 semanas</strong>; pódese elixir outro período.</p>
           <div class="axuda-nota">Ao volver importar o ficheiro actualízanse os eventos do mesmo día sen duplicalos. Pero se unha reserva se cancela ou se rexeita, o evento <strong>non se elimina</strong> do calendario: hai que borralo a man. Convén volver exportar despois de aprobar reservas novas.</div>
         </div>
@@ -2797,6 +2822,43 @@ function exportarSemana() {
 // ============================================================
 // RECORDATORIOS DE CALEFACCIÓN (.ics)
 // ============================================================
+// ============================================================
+// AXUSTES (gardados en localStorage, só neste navegador)
+// ============================================================
+const REXEX_CORREO = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
+
+function lerAxustes() {
+  try {
+    const o = JSON.parse(localStorage.getItem('cfr_axustes') || '{}');
+    return { convidados: Array.isArray(o.convidados) ? o.convidados : [], organizadora: o.organizadora || '' };
+  } catch (e) { return { convidados: [], organizadora: '' }; }
+}
+
+function cargarAxustesNoFormulario() {
+  const a = lerAxustes();
+  const c = document.getElementById('axu-convidados'), o = document.getElementById('axu-organizadora');
+  if (c) c.value = a.convidados.join(', ');
+  if (o) o.value = a.organizadora;
+}
+
+function gardarAxustes() {
+  const res = document.getElementById('axu-resultado');
+  const convidados = document.getElementById('axu-convidados').value.split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
+  const organizadora = document.getElementById('axu-organizadora').value.trim();
+  const malos = convidados.concat(organizadora ? [organizadora] : []).filter(x => !REXEX_CORREO.test(x));
+  if (malos.length) {
+    res.innerHTML = '<span style="color:#c62828">Correo non válido: ' + malos.map(x => x.replace(/&/g,'&amp;').replace(/</g,'&lt;')).join(', ') + '</span>';
+    return;
+  }
+  try {
+    localStorage.setItem('cfr_axustes', JSON.stringify({ convidados: Array.from(new Set(convidados)), organizadora }));
+  } catch (e) {
+    res.innerHTML = '<span style="color:#c62828">Non se puido gardar neste navegador (almacenamento bloqueado).</span>';
+    return;
+  }
+  res.innerHTML = '<span style="color:#2e7d32;font-weight:600">✓ Axustes gardados.</span>';
+}
+
 function actualizarVisibilidadeDatasICS() {
   const pers = document.getElementById('cal-ics-periodo').value === 'personalizado';
   document.getElementById('cal-ics-desde-campo').style.display = pers ? '' : 'none';
@@ -2872,13 +2934,15 @@ function calcularEntradasCalefaccion(desde, ata) {
   return Object.values(entradas).sort((a,b) => a.dataEntrada.localeCompare(b.dataEntrada));
 }
 
-function xerarTextoICS(entradas) {
+function xerarTextoICS(entradas, convidados, organizadora) {
+  convidados = convidados || [];
   const agora = new Date();
   const p2 = n => String(n).padStart(2,'0');
   const stamp = `${agora.getUTCFullYear()}${p2(agora.getUTCMonth()+1)}${p2(agora.getUTCDate())}T${p2(agora.getUTCHours())}${p2(agora.getUTCMinutes())}${p2(agora.getUTCSeconds())}Z`;
   const seq = Math.floor(agora.getTime() / 60000); // crece sempre: permite que a reimportación actualice o evento
   const L = [
-    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CFR de Vigo//Reservas calefaccion//GL','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//CFR de Vigo//Reservas calefaccion//GL','CALSCALE:GREGORIAN',
+    (convidados.length && organizadora) ? 'METHOD:REQUEST' : 'METHOD:PUBLISH',
     'X-WR-CALNAME:Calefacción CFR','X-WR-TIMEZONE:Europe/Madrid',
     'BEGIN:VTIMEZONE','TZID:Europe/Madrid',
     'BEGIN:DAYLIGHT','TZOFFSETFROM:+0100','TZOFFSETTO:+0200','TZNAME:CEST','DTSTART:19700329T020000','RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU','END:DAYLIGHT',
@@ -2896,7 +2960,10 @@ function xerarTextoICS(entradas) {
       `DTSTART;TZID=Europe/Madrid:${d}T${hIni}`,
       `DTEND;TZID=Europe/Madrid:${d}T${hFin}`,
       `SUMMARY:${icsEscapar('🔥 ' + en.resumo)}`,
-      `DESCRIPTION:${icsEscapar(en.descricion)}`,
+      `DESCRIPTION:${icsEscapar(en.descricion)}`);
+    if (organizadora) L.push(`ORGANIZER:mailto:${organizadora}`);
+    convidados.forEach(c => L.push(`ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${c}`));
+    L.push(
       'BEGIN:VALARM','ACTION:DISPLAY',`DESCRIPTION:${icsEscapar(en.resumo)}`,'TRIGGER:PT0S','END:VALARM',
       'END:VEVENT');
   });
@@ -2929,7 +2996,8 @@ function exportarCalefaccionICS() {
     res.innerHTML = '<span style="color:#c62828">Non hai reservas Aprobadas en espazos do CFR nese período que precisen recordatorio futuro. Non se xerou ningún ficheiro.</span>';
     return;
   }
-  const texto = xerarTextoICS(entradas);
+  const ax = lerAxustes();
+  const texto = xerarTextoICS(entradas, ax.convidados, ax.organizadora);
   const blob = new Blob([texto], { type: 'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2945,6 +3013,7 @@ function exportarCalefaccionICS() {
   }).join('');
   res.innerHTML = `<div style="color:#2e7d32;font-weight:600;margin-bottom:6px">✓ Ficheiro xerado con ${entradas.length} recordatorio${entradas.length>1?'s':''}.</div>`
     + (omitidas ? `<div style="color:#8a6d00;margin-bottom:6px">${omitidas} recordatorio${omitidas>1?'s':''} do pasado non se incluíron.</div>` : '')
+    + (ax.convidados.length ? `<div style="margin-bottom:6px">Convidadas: ${esc(ax.convidados.join(', '))}${ax.organizadora ? '' : ' <span style="color:#8a6d00">(sen correo de organizadora en Axustes: pode que non se envíe o convite)</span>'}</div>` : '')
     + `<ul style="margin:0 0 8px 18px">${lista}</ul>`
     + `<div style="color:#555">Ao volver importar o ficheiro, os eventos existentes actualízanse (non se duplican). Se unha reserva se cancela ou se rexeita, o seu evento <strong>non se borra</strong> automaticamente do calendario: haberá que eliminalo a man.</div>`;
 }
@@ -2971,8 +3040,9 @@ function mostrarPanel(id) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('activo'));
   document.getElementById('panel-' + id).classList.add('activo');
-  const idx = ['calendario','informes','nova-reserva','axuda'].indexOf(id);
+  const idx = ['calendario','informes','nova-reserva','axuda','axustes'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx]?.classList.add('activo');
+  if (id === 'axustes') cargarAxustesNoFormulario();
   ocultarAlertas();
 }
 
