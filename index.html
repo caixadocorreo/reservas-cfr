@@ -1120,7 +1120,7 @@
 
       <div class="form-card" id="calefaccion-card" style="margin-top:20px">
         <h3>🔥 Recordatorios de calefacción (.ics)</h3>
-        <p style="font-size:13px;color:#555;margin-bottom:12px">Xera un ficheiro de calendario coa lista de espazos que hai que deixar cos acumuladores acesos, a partir das reservas <strong>Aprobadas</strong> (todos os tipos; sen contar "Espazo externo"). Importa o ficheiro no calendario (Google Calendar, Outlook…).</p>
+        <p style="font-size:13px;color:#555;margin-bottom:12px">Xera un ficheiro de calendario coa lista de espazos que hai que deixar cos acumuladores acesos, a partir das reservas <strong>Aprobadas</strong> (todos os tipos; sen contar "Espazo externo"). Inclúe tamén, <strong>todos os xoves ás 10:00</strong>, un recordatorio para exportar a semana seguinte para Sesións. Importa o ficheiro no calendario (Google Calendar, Outlook…).</p>
         <div class="form-grid tres">
           <div class="campo">
             <label>Actividades do período</label>
@@ -1448,6 +1448,7 @@
             <li><strong>Venres e sábado</strong> → un único recordatorio o <strong>xoves ás 10:00</strong>, cos espazos de cada día e o aviso de <strong>calefacción e alarma</strong>. Se non hai actividade venres nin sábado, non hai recordatorio o xoves.</li>
           </ul>
           <p>Se en <strong>⚙️ Axustes</strong> indicas unha ou varias <strong>persoas convidadas</strong> (e, recomendado, o <strong>correo da organizadora</strong>, que é o da conta onde importas), o ficheiro inclúe os convites. Algúns calendarios (Nextcloud, Google) poden enviar un correo ao importar; non está garantido, comprobao cunha proba. Os axustes gárdanse só neste navegador.</p>
+          <p>Ademais, <strong>todos os xoves ás 10:00</strong> hai un evento propio <strong>"📋 Exportar semana para Sesións"</strong> que lembra exportar a semana seguinte (luns a sábado). Indica cantas reservas Aprobadas de formación hai nesa semana no momento de xerar o ficheiro, ou avisa de que non hai ningunha.</p>
           <p>Cada recordatorio dura 30 minutos e avisa ao comezo. Por defecto cóbrense as <strong>próximas 2 semanas</strong>; pódese elixir outro período.</p>
           <div class="axuda-nota">Ao volver importar o ficheiro actualízanse os eventos do mesmo día sen duplicalos. Pero se unha reserva se cancela ou se rexeita, o evento <strong>non se elimina</strong> do calendario: hai que borralo a man. Convén volver exportar despois de aprobar reservas novas.</div>
         </div>
@@ -2763,6 +2764,9 @@ function exportarPDF() {
   window.print();
 }
 
+// Tipos que se envían á cartelería TV (usado polo export de semana e polos recordatorios .ics)
+const TIPOS_FORMACION_TV = ['AFI', 'Formación PFPP', 'Formación', 'Cesión de espazo a terceiros'];
+
 function exportarSemana() {
   const lun = getLunesDeOfset(semanaOffset);
   const [a,m,d] = [lun.getFullYear(), String(lun.getMonth()+1).padStart(2,'0'), String(lun.getDate()).padStart(2,'0')];
@@ -2774,7 +2778,7 @@ function exportarSemana() {
   });
 
   // Filtrar reservas aprobadas de formación nesa semana
-  const tiposFormacion = ['AFI', 'Formación PFPP', 'Formación', 'Cesión de espazo a terceiros'];
+  const tiposFormacion = TIPOS_FORMACION_TV;
   const seleccionadas = reservas.filter(r =>
     datasSemana.includes(r.data) &&
     r.estado === 'Aprobada' &&
@@ -2934,6 +2938,31 @@ function calcularEntradasCalefaccion(desde, ata) {
   return Object.values(entradas).sort((a,b) => a.dataEntrada.localeCompare(b.dataEntrada));
 }
 
+// Recordatorio de todos os xoves: exportar a semana seguinte (luns a sábado) para Sesións
+function calcularEntradasSesions(desde, ata) {
+  const res = [];
+  const cur = icsData(desde);
+  while (fmt(cur) <= ata) {
+    if (cur.getDay() === 4) {
+      const xoves = fmt(cur);
+      const lun = icsSumarDias(xoves, 4), sab = icsSumarDias(xoves, 9);
+      const n = reservas.filter(r => r.estado === 'Aprobada' && r.data >= lun && r.data <= sab && TIPOS_FORMACION_TV.includes(r.tipo)
+        && (r.espazos || '').split(';').map(e => e.trim()).filter(e => e && e !== 'Espazo externo').length > 0).length;
+      const f = d => { const [a,m,dd] = d.split('-'); return `${dd}/${m}/${a}`; };
+      res.push({
+        dataEntrada: xoves, hora: '100000', tipo: 'sesions', prefixo: 'sesions', icona: '📋',
+        diasActividade: [],
+        resumo: `Exportar semana para Sesións (${f(lun)} – ${f(sab)})`,
+        descricion: `Exportar na vista Semana do calendario de reservas a semana do ${f(lun)} ao ${f(sab)} (botón "Exportar semana para Sesións") e pegala na folla de Sesións da cartelería TV.\n\n`
+          + (n > 0 ? `Á data de xerar este ficheiro hai ${n} reserva${n>1?'s':''} Aprobada${n>1?'s':''} de formación nesa semana (pode cambiar se se aproban máis).`
+                   : 'Á data de xerar este ficheiro non hai reservas Aprobadas de formación nesa semana (pode cambiar se se aproban despois).')
+      });
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return res;
+}
+
 function xerarTextoICS(entradas, convidados, organizadora) {
   convidados = convidados || [];
   const agora = new Date();
@@ -2954,12 +2983,12 @@ function xerarTextoICS(entradas, convidados, organizadora) {
     const hIni = en.hora;
     const hFin = en.hora.slice(0,2) + '3000';
     L.push('BEGIN:VEVENT',
-      `UID:calefaccion-${d}@reservas-cfr`,
+      `UID:${en.prefixo || 'calefaccion'}-${d}@reservas-cfr`,
       `DTSTAMP:${stamp}`,
       `SEQUENCE:${seq}`,
       `DTSTART;TZID=Europe/Madrid:${d}T${hIni}`,
       `DTEND;TZID=Europe/Madrid:${d}T${hFin}`,
-      `SUMMARY:${icsEscapar('🔥 ' + en.resumo)}`,
+      `SUMMARY:${icsEscapar((en.icona || '🔥') + ' ' + en.resumo)}`,
       `DESCRIPTION:${icsEscapar(en.descricion)}`);
     if (organizadora) L.push(`ORGANIZER:mailto:${organizadora}`);
     convidados.forEach(c => L.push(`ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${c}`));
@@ -2989,11 +3018,12 @@ function exportarCalefaccionICS() {
     if (desde > ata) { res.innerHTML = '<span style="color:#c62828">A data "Desde" non pode ser posterior a "Ata".</span>'; return; }
   }
   const hoxeStr = fmt(hoxe);
-  const todas = calcularEntradasCalefaccion(desde, ata);
+  const todas = calcularEntradasCalefaccion(desde, ata).concat(calcularEntradasSesions(desde, ata))
+    .sort((a,b) => a.dataEntrada.localeCompare(b.dataEntrada) || a.hora.localeCompare(b.hora));
   const entradas = todas.filter(e => e.dataEntrada >= hoxeStr); // non xerar recordatorios do pasado
   const omitidas = todas.length - entradas.length;
   if (entradas.length === 0) {
-    res.innerHTML = '<span style="color:#c62828">Non hai reservas Aprobadas en espazos do CFR nese período que precisen recordatorio futuro. Non se xerou ningún ficheiro.</span>';
+    res.innerHTML = '<span style="color:#c62828">Non hai recordatorios futuros nese período (sen reservas Aprobadas en espazos do CFR nin xoves por avisar). Non se xerou ningún ficheiro.</span>';
     return;
   }
   const ax = lerAxustes();
@@ -3008,7 +3038,7 @@ function exportarCalefaccionICS() {
   const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
   const lista = entradas.map(e => {
     const [y,m,d] = e.dataEntrada.split('-');
-    const h = e.hora === '200000' ? '20:00' : '10:00';
+    const h = e.hora.slice(0,2) + ':' + e.hora.slice(2,4);
     return `<li><strong>${d}/${m}/${y} ${h}</strong> — ${esc(e.resumo)}<br><span style="color:#555;white-space:pre-line">${esc(e.descricion)}</span></li>`;
   }).join('');
   res.innerHTML = `<div style="color:#2e7d32;font-weight:600;margin-bottom:6px">✓ Ficheiro xerado con ${entradas.length} recordatorio${entradas.length>1?'s':''}.</div>`

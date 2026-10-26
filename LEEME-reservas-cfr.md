@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (exportación .ics de calefacción con convidadas e menú Axustes)*
+*Última actualización: 25/10/2026 (.ics: recordatorio semanal de exportar para Sesións)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -101,6 +101,7 @@ Na parte inferior da pestana Informes, o cadro **"🔥 Recordatorios de calefacc
 | Venres e/ou sábado | Un único recordatorio o **xoves**, cos espazos de cada día desagregados e aviso de **calefacción e alarma** | 10:00 |
 
 - Se non hai actividade venres nin sábado, non se crea recordatorio o xoves.
+- **Todos os xoves do período** créase ademais un evento propio, ás 10:00, **"📋 Exportar semana para Sesións"**, que lembra exportar a semana seguinte (luns a sábado). A descrición indica cantas reservas `Aprobada` de formación (AFI, Formación PFPP, Cesión de espazo a terceiros; sen "Espazo externo") hai nesa semana no momento de xerar o ficheiro, ou avisa de que non hai ningunha. Ese número pode cambiar se se aproban máis reservas despois. Leva as mesmas convidadas que o resto de eventos.
 - Cada evento dura 30 minutos e ten alerta ao comezo.
 - Período por defecto: próximas 2 semanas. Tamén: 4 semanas, este mes, mes seguinte ou datas personalizadas (refírese ás datas das actividades).
 - Non se xeran recordatorios cuxa data xa pasou.
