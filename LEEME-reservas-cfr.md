@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (.ics: recordatorio semanal de exportar para Sesións)*
+*Última actualización: 25/10/2026 (.ics: recordatorios de apagar a calefacción)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -102,6 +102,7 @@ Na parte inferior da pestana Informes, o cadro **"🔥 Recordatorios de calefacc
 
 - Se non hai actividade venres nin sábado, non se crea recordatorio o xoves.
 - **Todos os xoves do período** créase ademais un evento propio, ás 10:00, **"📋 Exportar semana para Sesións"**, que lembra exportar a semana seguinte (luns a sábado). A descrición indica cantas reservas `Aprobada` de formación (AFI, Formación PFPP, Cesión de espazo a terceiros; sen "Espazo externo") hai nesa semana no momento de xerar o ficheiro, ou avisa de que non hai ningunha. Ese número pode cambiar se se aproban máis reservas despois. Leva as mesmas convidadas que o resto de eventos.
+- **Apagar a calefacción**: nos eventos das 20:00 engádese, se procede, a lista de espazos que hai que **apagar ese mesmo día**: os usados ese día que ao día natural seguinte non teñen actividade. A comparación é **por espazo** e usa todas as reservas `Aprobada` (tamén as posteriores ao final do período exportado). Un sábado apágase sempre (o domingo non hai actividade); un venres, o que non se use o sábado; un xoves, o que non se use o venres. Se o mesmo día hai que deixar acesos e apagar, é **un único evento** con dúas listas ("DEIXAR ACESOS para mañá" e "APAGAR hoxe"). Se non hai nada que acender nin apagar ese día, non se crea evento. Os xoves hai así dous eventos: o das 10:00 (venres/sábado, con alarma) e, se hai que apagar, o das 20:00.
 - Cada evento dura 30 minutos e ten alerta ao comezo.
 - Período por defecto: próximas 2 semanas. Tamén: 4 semanas, este mes, mes seguinte ou datas personalizadas (refírese ás datas das actividades).
 - Non se xeran recordatorios cuxa data xa pasou.

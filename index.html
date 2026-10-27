@@ -1448,6 +1448,7 @@
             <li><strong>Venres e sábado</strong> → un único recordatorio o <strong>xoves ás 10:00</strong>, cos espazos de cada día e o aviso de <strong>calefacción e alarma</strong>. Se non hai actividade venres nin sábado, non hai recordatorio o xoves.</li>
           </ul>
           <p>Se en <strong>⚙️ Axustes</strong> indicas unha ou varias <strong>persoas convidadas</strong> (e, recomendado, o <strong>correo da organizadora</strong>, que é o da conta onde importas), o ficheiro inclúe os convites. Algúns calendarios (Nextcloud, Google) poden enviar un correo ao importar; non está garantido, comprobao cunha proba. Os axustes gárdanse só neste navegador.</p>
+          <p>Os eventos das 20:00 inclúen tamén, se procede, os espazos que hai que <strong>apagar ese mesmo día</strong>: os usados ese día que ao día seguinte non teñen actividade (compárase por espazo, co calendario completo). Un sábado apágase sempre; un venres, o que non se use o sábado; un xoves, o que non se use o venres. Se hai que acender e apagar o mesmo día, é un só evento con dúas listas. Se non hai nada que facer, non hai evento.</p>
           <p>Ademais, <strong>todos os xoves ás 10:00</strong> hai un evento propio <strong>"📋 Exportar semana para Sesións"</strong> que lembra exportar a semana seguinte (luns a sábado). Indica cantas reservas Aprobadas de formación hai nesa semana no momento de xerar o ficheiro, ou avisa de que non hai ningunha.</p>
           <p>Cada recordatorio dura 30 minutos e avisa ao comezo. Por defecto cóbrense as <strong>próximas 2 semanas</strong>; pódese elixir outro período.</p>
           <div class="axuda-nota">Ao volver importar o ficheiro actualízanse os eventos do mesmo día sen duplicalos. Pero se unha reserva se cancela ou se rexeita, o evento <strong>non se elimina</strong> do calendario: hai que borralo a man. Convén volver exportar despois de aprobar reservas novas.</div>
@@ -2897,45 +2898,75 @@ function icsData(str) { // 'YYYY-MM-DD' -> Date ao mediodía local (evita proble
 }
 function icsSumarDias(str, n) { const d = icsData(str); d.setDate(d.getDate()+n); return fmt(d); }
 
-// Devolve [{dataEntrada, hora, tipo:'diaria'|'xoves', liñas:[...], diasActividade:[...]}]
+// Devolve [{dataEntrada, hora, tipo, prefixo, resumo, descricion}]
+// - Tarde/noite (20:00): espazos a deixar acesos para mañá (luns a xoves) e espazos a apagar hoxe
+// - Xoves (10:00): espazos de venres/sábado (calefacción e alarma)
 function calcularEntradasCalefaccion(desde, ata) {
   const DIAS = ['domingo','luns','martes','mércores','xoves','venres','sábado'];
-  const porDia = {}; // data -> { espazo -> [horarios] }
+  const porDia = {}; // data -> { espazo -> [horarios] } con TODAS as reservas Aprobadas (para comparar co día seguinte)
   reservas.forEach(r => {
-    if (r.estado !== 'Aprobada' || !r.data || r.data < desde || r.data > ata) return;
+    if (r.estado !== 'Aprobada' || !r.data) return;
     (r.espazos || '').split(';').map(e => e.trim()).filter(e => e && e !== 'Espazo externo').forEach(e => {
       porDia[r.data] = porDia[r.data] || {};
       porDia[r.data][e] = porDia[r.data][e] || [];
       if (r.horaInicio) porDia[r.data][e].push(`${r.horaInicio}–${r.horaFin}`);
     });
   });
-  const descDia = (data) => Object.keys(porDia[data]).sort((a,b) => a.localeCompare(b,'gl',{numeric:true}))
-    .map(e => `${e} (${porDia[data][e].sort().join(', ')})`);
+  const ordenar = (a,b) => a.localeCompare(b,'gl',{numeric:true});
+  const espazosDe = (data) => Object.keys(porDia[data] || {}).sort(ordenar);
+  const lista = (data, nomes) => nomes.map(e => `• ${e} (${porDia[data][e].slice().sort().join(', ')})`).join('\n');
   const fmtCurto = (data) => { const [a,m,d] = data.split('-'); return `${d}/${m}`; };
+  const dowDe = (data) => icsData(data).getDay();
+  const enRango = (data) => data >= desde && data <= ata;
 
-  const entradas = {};
-  Object.keys(porDia).sort().forEach(data => {
-    const dow = icsData(data).getDay(); // 0 dom … 6 sáb
-    if (dow === 0) return; // domingo: non hai actividade prevista
-    if (dow >= 1 && dow <= 4) {
-      const entrada = icsSumarDias(data, -1);
-      entradas[entrada] = { dataEntrada: entrada, hora: '200000', tipo: 'diaria', diasActividade: [data],
-        resumo: 'Calefacción: deixar acumuladores acesos',
-        descricion: `Espazos a deixar acesos para a actividade de ${DIAS[dow]} ${fmtCurto(data)}:\n` + descDia(data).map(x => '• ' + x).join('\n') };
-    } else { // venres (5) ou sábado (6): entrada conxunta o xoves
-      const xoves = icsSumarDias(data, dow === 5 ? -1 : -2);
-      if (!entradas[xoves]) entradas[xoves] = { dataEntrada: xoves, hora: '100000', tipo: 'xoves', diasActividade: [], bloques: {} };
-      entradas[xoves].diasActividade.push(data);
-      entradas[xoves].bloques[data] = `${DIAS[dow].toUpperCase()} ${fmtCurto(data)}:\n` + descDia(data).map(x => '• ' + x).join('\n');
+  const entradas = [];
+
+  // 1) Eventos das 20:00 (un por día, só se hai algo que acender ou apagar)
+  for (let E = icsSumarDias(desde, -1); E <= ata; E = icsSumarDias(E, 1)) {
+    const dowE = dowDe(E);
+    const seguinte = icsSumarDias(E, 1);
+    const dowS = dowDe(seguinte);
+    // Acender para mañá: só luns a xoves (venres e sábado van no aviso do xoves ás 10:00)
+    let acender = [];
+    if (dowE >= 0 && dowE <= 3 && enRango(seguinte)) acender = espazosDe(seguinte);
+    // Apagar hoxe: espazos usados hoxe que mañá non teñen actividade (domingo nunca ten)
+    let apagar = [];
+    if (dowE >= 1 && dowE <= 6 && enRango(E)) {
+      const mañá = new Set(espazosDe(seguinte));
+      apagar = espazosDe(E).filter(e => !mañá.has(e));
     }
+    if (!acender.length && !apagar.length) continue;
+    const partes = [];
+    if (acender.length) partes.push(`🔥 DEIXAR ACESOS para a actividade de ${DIAS[dowS]} ${fmtCurto(seguinte)}:\n` + lista(seguinte, acender));
+    if (apagar.length) partes.push(`⏻ APAGAR hoxe (${DIAS[dowE]} ${fmtCurto(E)}), sen actividade mañá:\n` + lista(E, apagar));
+    entradas.push({
+      dataEntrada: E, hora: '200000', tipo: 'diaria',
+      prefixo: dowE === 4 ? 'calefaccion-noite' : 'calefaccion', // o xoves xa existe o aviso das 10:00 con prefixo 'calefaccion'
+      resumo: acender.length && apagar.length ? 'Calefacción: deixar acesos para mañá e apagar hoxe'
+            : acender.length ? 'Calefacción: deixar acumuladores acesos' : 'Calefacción: apagar acumuladores',
+      descricion: partes.join('\n\n')
+    });
+  }
+
+  // 2) Aviso conxunto do xoves (10:00) para venres e sábado, con alarma
+  const xoves = {};
+  for (let D = desde; D <= ata; D = icsSumarDias(D, 1)) {
+    const dow = dowDe(D);
+    if ((dow !== 5 && dow !== 6) || !espazosDe(D).length) continue;
+    const T = icsSumarDias(D, dow === 5 ? -1 : -2);
+    xoves[T] = xoves[T] || { dias: [], bloques: {} };
+    xoves[T].dias.push(D);
+    xoves[T].bloques[D] = `${DIAS[dow].toUpperCase()} ${fmtCurto(D)}:\n` + lista(D, espazosDe(D));
+  }
+  Object.keys(xoves).forEach(T => {
+    entradas.push({
+      dataEntrada: T, hora: '100000', tipo: 'xoves', prefixo: 'calefaccion',
+      resumo: 'Calefacción e ALARMA: espazos de venres/sábado',
+      descricion: 'Deixar acumuladores acesos e acender a ALARMA.\n\n' + xoves[T].dias.sort().map(d => xoves[T].bloques[d]).join('\n\n')
+    });
   });
-  Object.values(entradas).forEach(en => {
-    if (en.tipo === 'xoves') {
-      en.resumo = 'Calefacción e ALARMA: espazos de venres/sábado';
-      en.descricion = 'Deixar acumuladores acesos e acender a ALARMA.\n\n' + en.diasActividade.sort().map(d => en.bloques[d]).join('\n\n');
-    }
-  });
-  return Object.values(entradas).sort((a,b) => a.dataEntrada.localeCompare(b.dataEntrada));
+
+  return entradas.sort((a,b) => a.dataEntrada.localeCompare(b.dataEntrada) || a.hora.localeCompare(b.hora));
 }
 
 // Recordatorio de todos os xoves: exportar a semana seguinte (luns a sábado) para Sesións
