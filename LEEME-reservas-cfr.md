@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (.ics: recordatorios de apagar a calefacción)*
+*Última actualización: 25/10/2026 (.ics: espazo ANPA só para calefacción, lido da folla ANPA)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -286,6 +286,29 @@ A persoa responsable traballa directamente no **Google Sheet**:
 
 *Nota de privacidade*: esta folla en si non se publica. Para a validación de iniciais (§1), só se publica a columna A (código) — nunha folla auxiliar se non se quere tocar a orixinal. A columna B (nome completo) non debe publicarse nunca en CSV.
 
+### Folla `ANPA`
+Serve **só** para os recordatorios de calefacción do `.ics`. O ANPA é un espazo que usa o alumnado do centro de primaria de enfronte e ten acumuladores xestionados polo CFR. Non é un espazo de reservas: non aparece no calendario, nos Informes nin na cartelería TV.
+
+| Columna | Campo |
+|---|---|
+| A | Desde (AAAA-MM-DD) |
+| B | Ata (AAAA-MM-DD) |
+| C | Días da semana: `Lun`, `Mar`, `Mér`, `Xov`, `Ven` (separados por coma). O sábado non se admite. |
+| D | Excepcións (opcional): datas AAAA-MM-DD que se quitan do intervalo, separadas por coma |
+
+- A primeira fila é a cabeceira. Cada fila seguinte é un intervalo cos días da semana en que se usa.
+- Unha data solta é unha fila con `Desde` igual a `Ata`; nese caso a columna `Días` pode quedar baleira.
+- Exemplo: `2026-11-02 | 2026-12-18 | Mar, Xov | 2026-12-08`.
+- **Recoméndase formatear as columnas A, B e D como texto simple** (Formato → Número → Texto simple) para que Google non cambie o formato das datas. Tamén se aceptan datas DD/MM/AAAA.
+- No `.ics`, o ANPA conta coma un espazo máis (sen horario) e aplícanse as mesmas regras de acender o día anterior e apagar se ao día seguinte non hai actividade. Se está marcado un venres, vai no aviso conxunto do xoves.
+- Ao exportar, a app le a folla nese momento. Se hai erros (data mal escrita, día non válido…), **avisa e non xera ficheiro**, para non dar un calendario incompleto. Google pode tardar uns minutos en publicar os cambios.
+
+**Como activala**
+1. No Google Sheet, crea unha folla chamada `ANPA` coas catro columnas.
+2. Arquivo → Compartir → Publicar na web → elixe só a folla `ANPA` e o formato CSV → Publicar. Copia a ligazón.
+3. En `index.html`, substitúe o valor de `CSV_ANPA_URL` (`PENDENTE_URL_ANPA`) pola ligazón e sube o ficheiro a GitHub.
+4. Mentres a constante siga en `PENDENTE_URL_ANPA`, o `.ics` xérase sen ANPA.
+
 ### Folla `Config`
 | Columna | Campo |
 |---|---|
@@ -311,6 +334,7 @@ Créase automaticamente pola primeira vez que un envío falla. Non hai que crear
 | `CSV_RECURSOS_URL` | Recursos (formulario) |
 | `CSV_CATALOGO_URL` | Catálogo de actividades |
 | `CSV_ASESORAS_URL` | Códigos de asesoras (só columna A, para validar o login) |
+| `CSV_ANPA_URL` | Datas de uso do ANPA (só para os recordatorios de calefacción do `.ics`) |
 
 ---
 

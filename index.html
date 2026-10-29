@@ -1450,6 +1450,7 @@
           <p>Se en <strong>⚙️ Axustes</strong> indicas unha ou varias <strong>persoas convidadas</strong> (e, recomendado, o <strong>correo da organizadora</strong>, que é o da conta onde importas), o ficheiro inclúe os convites. Algúns calendarios (Nextcloud, Google) poden enviar un correo ao importar; non está garantido, comprobao cunha proba. Os axustes gárdanse só neste navegador.</p>
           <p>Os eventos das 20:00 inclúen tamén, se procede, os espazos que hai que <strong>apagar ese mesmo día</strong>: os usados ese día que ao día seguinte non teñen actividade (compárase por espazo, co calendario completo). Un sábado apágase sempre; un venres, o que non se use o sábado; un xoves, o que non se use o venres. Se hai que acender e apagar o mesmo día, é un só evento con dúas listas. Se non hai nada que facer, non hai evento.</p>
           <p>Ademais, <strong>todos os xoves ás 10:00</strong> hai un evento propio <strong>"📋 Exportar semana para Sesións"</strong> que lembra exportar a semana seguinte (luns a sábado). Indica cantas reservas Aprobadas de formación hai nesa semana no momento de xerar o ficheiro, ou avisa de que non hai ningunha.</p>
+          <p><strong>ANPA</strong>: as datas nas que o alumnado do centro de primaria usa o espazo ANPA (só para acender e apagar a calefacción) lense da folla <span class="axuda-tag">ANPA</span> do Google Sheet, con columnas <em>Desde, Ata, Días, Excepcións</em> (días: Lun, Mar, Mér, Xov, Ven). Contan coma un espazo máis nos avisos, sen horario. Se a folla ten erros, a exportación avisa e non xera ficheiro.</p>
           <p>Cada recordatorio dura 30 minutos e avisa ao comezo. Por defecto cóbrense as <strong>próximas 2 semanas</strong>; pódese elixir outro período.</p>
           <div class="axuda-nota">Ao volver importar o ficheiro actualízanse os eventos do mesmo día sen duplicalos. Pero se unha reserva se cancela ou se rexeita, o evento <strong>non se elimina</strong> do calendario: hai que borralo a man. Convén volver exportar despois de aprobar reservas novas.</div>
         </div>
@@ -1523,6 +1524,7 @@ const CSV_CATALOGO_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRINyq
 let CATALOGO = [];
 const CSV_RECURSOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1567420509&single=true&output=csv';
 const CSV_RESERVAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=0&single=true&output=csv'; // Cambiar por PIN real
+const CSV_ANPA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQNdzPM55N3O5MD-hVBNG90nYW9GpvQWjfm-BpwNcHJKaIVxDEuFMdYE6_IzSk-_RXJqFs7S0-D9R_-/pubhtml'; // Folla "ANPA" publicada en CSV (só para os recordatorios de calefacción). Ver LEEME, sección ANPA.
 const CSV_ASESORAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1331552294&single=true&output=csv';
 
 const ESPAZOS_TODOS = [
@@ -2864,6 +2866,81 @@ function gardarAxustes() {
   res.innerHTML = '<span style="color:#2e7d32;font-weight:600">✓ Axustes gardados.</span>';
 }
 
+// ------------------------------------------------------------
+// ANPA: datas lidas da folla "ANPA" (Desde, Ata, Días, Excepcións)
+// ------------------------------------------------------------
+function parsearCSVSimple(t) {
+  const filas = []; let fila = [], cur = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i+1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { fila.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && t[i+1] === '\n') i++; fila.push(cur); filas.push(fila); fila = []; cur = ''; }
+    else cur += c;
+  }
+  if (cur !== '' || fila.length) { fila.push(cur); filas.push(fila); }
+  return filas;
+}
+
+// Acepta AAAA-MM-DD ou DD/MM/AAAA; devolve 'AAAA-MM-DD' ou null
+function normalizarDataANPA(txt) {
+  const t = String(txt || '').trim();
+  let a, m, d, r;
+  if ((r = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) { a = +r[1]; m = +r[2]; d = +r[3]; }
+  else if ((r = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))) { d = +r[1]; m = +r[2]; a = +r[3]; }
+  else return null;
+  const dt = new Date(a, m-1, d, 12);
+  if (dt.getFullYear() !== a || dt.getMonth() !== m-1 || dt.getDate() !== d) return null;
+  return fmt(dt);
+}
+
+const DIAS_ANPA = { lun: 1, mar: 2, mer: 3, xov: 4, ven: 5 };
+
+// Devolve { datas: [...], erros: [...] }. Non lanza excepcións por filas incorrectas.
+function interpretarFollaANPA(texto) {
+  const filas = parsearCSVSimple(texto);
+  const datas = new Set(), erros = [];
+  filas.forEach((f, i) => {
+    const n = i + 1;
+    if (f.every(c => !String(c).trim())) return; // fila baleira
+    const desdeTxt = (f[0] || '').trim();
+    if (n === 1 && !normalizarDataANPA(desdeTxt)) return; // cabeceira
+    const desde = normalizarDataANPA(f[0]), ata = normalizarDataANPA(f[1]);
+    if (!desde || !ata) { erros.push(`Fila ${n}: "Desde" ou "Ata" non son datas válidas (usa AAAA-MM-DD).`); return; }
+    if (desde > ata) { erros.push(`Fila ${n}: "Desde" é posterior a "Ata".`); return; }
+    if ((icsData(ata) - icsData(desde)) / 86400000 > 800) { erros.push(`Fila ${n}: intervalo demasiado longo.`); return; }
+    const diasTxt = (f[2] || '').trim();
+    let dias = null;
+    if (diasTxt) {
+      dias = new Set(); let malo = false;
+      diasTxt.split(/[\s,;\/]+/).filter(Boolean).forEach(tk => {
+        const k = tk.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().slice(0, 3);
+        if (DIAS_ANPA[k]) dias.add(DIAS_ANPA[k]); else malo = tk;
+      });
+      if (malo) { erros.push(`Fila ${n}: día "${malo}" non válido (usa Lun, Mar, Mér, Xov, Ven; o sábado non se admite).`); return; }
+    } else if (desde !== ata) { erros.push(`Fila ${n}: falta a columna "Días" nun intervalo.`); return; }
+    for (let D = desde; D <= ata; D = icsSumarDias(D, 1)) {
+      const dow = icsData(D).getDay();
+      if (dias ? dias.has(dow) : (dow >= 1 && dow <= 5)) datas.add(D);
+      else if (!dias) { erros.push(`Fila ${n}: ${D} cae en fin de semana (só se admite de luns a venres).`); return; }
+    }
+    ((f[3] || '').split(/[\s,;]+/).filter(Boolean)).forEach(x => {
+      const dx = normalizarDataANPA(x);
+      if (!dx) erros.push(`Fila ${n}: excepción "${x}" non é unha data válida.`); else datas.delete(dx);
+    });
+  });
+  return { datas: Array.from(datas).sort(), erros };
+}
+
+async function lerDatasANPA() {
+  const resp = await fetch(CSV_ANPA_URL, { cache: 'no-store' });
+  if (!resp.ok) throw new Error('A folla ANPA non respondeu (HTTP ' + resp.status + ').');
+  const r = interpretarFollaANPA(await resp.text());
+  if (r.erros.length) throw new Error('Hai erros na folla ANPA:\n• ' + r.erros.join('\n• '));
+  return r.datas;
+}
+
 function actualizarVisibilidadeDatasICS() {
   const pers = document.getElementById('cal-ics-periodo').value === 'personalizado';
   document.getElementById('cal-ics-desde-campo').style.display = pers ? '' : 'none';
@@ -2901,7 +2978,7 @@ function icsSumarDias(str, n) { const d = icsData(str); d.setDate(d.getDate()+n)
 // Devolve [{dataEntrada, hora, tipo, prefixo, resumo, descricion}]
 // - Tarde/noite (20:00): espazos a deixar acesos para mañá (luns a xoves) e espazos a apagar hoxe
 // - Xoves (10:00): espazos de venres/sábado (calefacción e alarma)
-function calcularEntradasCalefaccion(desde, ata) {
+function calcularEntradasCalefaccion(desde, ata, datasAnpa) {
   const DIAS = ['domingo','luns','martes','mércores','xoves','venres','sábado'];
   const porDia = {}; // data -> { espazo -> [horarios] } con TODAS as reservas Aprobadas (para comparar co día seguinte)
   reservas.forEach(r => {
@@ -2912,9 +2989,13 @@ function calcularEntradasCalefaccion(desde, ata) {
       if (r.horaInicio) porDia[r.data][e].push(`${r.horaInicio}–${r.horaFin}`);
     });
   });
+  (datasAnpa || []).forEach(d => { // ANPA: espazo só de calefacción, sen horario
+    porDia[d] = porDia[d] || {};
+    if (!porDia[d]['ANPA']) porDia[d]['ANPA'] = [];
+  });
   const ordenar = (a,b) => a.localeCompare(b,'gl',{numeric:true});
   const espazosDe = (data) => Object.keys(porDia[data] || {}).sort(ordenar);
-  const lista = (data, nomes) => nomes.map(e => `• ${e} (${porDia[data][e].slice().sort().join(', ')})`).join('\n');
+  const lista = (data, nomes) => nomes.map(e => `• ${e}` + (porDia[data][e].length ? ` (${porDia[data][e].slice().sort().join(', ')})` : '')).join('\n');
   const fmtCurto = (data) => { const [a,m,d] = data.split('-'); return `${d}/${m}`; };
   const dowDe = (data) => icsData(data).getDay();
   const enRango = (data) => data >= desde && data <= ata;
@@ -3031,7 +3112,7 @@ function xerarTextoICS(entradas, convidados, organizadora) {
   return L.map(icsPregar).join('\r\n') + '\r\n';
 }
 
-function exportarCalefaccionICS() {
+async function exportarCalefaccionICS() {
   const res = document.getElementById('cal-ics-resultado');
   const sel = document.getElementById('cal-ics-periodo').value;
   const hoxe = new Date(); hoxe.setHours(12,0,0,0);
@@ -3049,7 +3130,18 @@ function exportarCalefaccionICS() {
     if (desde > ata) { res.innerHTML = '<span style="color:#c62828">A data "Desde" non pode ser posterior a "Ata".</span>'; return; }
   }
   const hoxeStr = fmt(hoxe);
-  const todas = calcularEntradasCalefaccion(desde, ata).concat(calcularEntradasSesions(desde, ata))
+  // ANPA (opcional): se hai URL configurada e a lectura falla, non se xera ficheiro incompleto
+  let datasAnpa = [];
+  const esc0 = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  if (CSV_ANPA_URL !== 'PENDENTE_URL_ANPA') {
+    res.innerHTML = 'A ler a folla ANPA…';
+    try { datasAnpa = await lerDatasANPA(); }
+    catch (err) {
+      res.innerHTML = '<span style="color:#c62828;white-space:pre-line">' + esc0(err.message || err) + '\nNon se xerou ningún ficheiro. Corrixe a folla ANPA e volve tentalo (Google pode tardar uns minutos en publicar os cambios).</span>';
+      return;
+    }
+  }
+  const todas = calcularEntradasCalefaccion(desde, ata, datasAnpa).concat(calcularEntradasSesions(desde, ata))
     .sort((a,b) => a.dataEntrada.localeCompare(b.dataEntrada) || a.hora.localeCompare(b.hora));
   const entradas = todas.filter(e => e.dataEntrada >= hoxeStr); // non xerar recordatorios do pasado
   const omitidas = todas.length - entradas.length;
@@ -3074,6 +3166,7 @@ function exportarCalefaccionICS() {
   }).join('');
   res.innerHTML = `<div style="color:#2e7d32;font-weight:600;margin-bottom:6px">✓ Ficheiro xerado con ${entradas.length} recordatorio${entradas.length>1?'s':''}.</div>`
     + (omitidas ? `<div style="color:#8a6d00;margin-bottom:6px">${omitidas} recordatorio${omitidas>1?'s':''} do pasado non se incluíron.</div>` : '')
+    + (CSV_ANPA_URL !== 'PENDENTE_URL_ANPA' ? `<div style="margin-bottom:6px">ANPA: ${datasAnpa.filter(d => d >= desde && d <= ata).length} data(s) lida(s) da folla ANPA neste período.</div>` : '')
     + (ax.convidados.length ? `<div style="margin-bottom:6px">Convidadas: ${esc(ax.convidados.join(', '))}${ax.organizadora ? '' : ' <span style="color:#8a6d00">(sen correo de organizadora en Axustes: pode que non se envíe o convite)</span>'}</div>` : '')
     + `<ul style="margin:0 0 8px 18px">${lista}</ul>`
     + `<div style="color:#555">Ao volver importar o ficheiro, os eventos existentes actualízanse (non se duplican). Se unha reserva se cancela ou se rexeita, o seu evento <strong>non se borra</strong> automaticamente do calendario: haberá que eliminalo a man.</div>`;
