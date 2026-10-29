@@ -2907,7 +2907,10 @@ function interpretarFollaANPA(texto) {
     const desdeTxt = (f[0] || '').trim();
     if (n === 1 && !normalizarDataANPA(desdeTxt)) return; // cabeceira
     const desde = normalizarDataANPA(f[0]), ata = normalizarDataANPA(f[1]);
-    if (!desde || !ata) { erros.push(`Fila ${n}: "Desde" ou "Ata" non son datas válidas (usa AAAA-MM-DD).`); return; }
+    if (!desde || !ata) {
+      const ver = x => '"' + String(x || '').trim().slice(0, 40) + '"';
+      erros.push(`Fila ${n}: "Desde" (${ver(f[0])}) ou "Ata" (${ver(f[1])}) non son datas válidas (usa AAAA-MM-DD ou DD/MM/AAAA).`); return;
+    }
     if (desde > ata) { erros.push(`Fila ${n}: "Desde" é posterior a "Ata".`); return; }
     if ((icsData(ata) - icsData(desde)) / 86400000 > 800) { erros.push(`Fila ${n}: intervalo demasiado longo.`); return; }
     const diasTxt = (f[2] || '').trim();
@@ -2936,7 +2939,9 @@ function interpretarFollaANPA(texto) {
 async function lerDatasANPA() {
   const resp = await fetch(CSV_ANPA_URL, { cache: 'no-store' });
   if (!resp.ok) throw new Error('A folla ANPA non respondeu (HTTP ' + resp.status + ').');
-  const r = interpretarFollaANPA(await resp.text());
+  const texto = await resp.text();
+  if (/^\s*<(!doctype|html)/i.test(texto)) throw new Error('A ligazón de CSV_ANPA_URL devolve unha páxina web (HTML), non un CSV. Ao publicar a folla hai que escoller o formato "Valores separados por comas (.csv)", non "Páxina web".');
+  const r = interpretarFollaANPA(texto);
   if (r.erros.length) throw new Error('Hai erros na folla ANPA:\n• ' + r.erros.join('\n• '));
   return r.datas;
 }
