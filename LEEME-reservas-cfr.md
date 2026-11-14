@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (ANPA: aclaración de publicación CSV e erros máis claros)*
+*Última actualización: 25/10/2026 (modo consulta ?consulta para o persoal administrativo; informes só con reservas aprobadas)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -75,8 +75,10 @@ Pestana **"📊 Informes"**. Calcúlase enteiramente no navegador a partir das r
 Despregable con: Este mes, Mes pasado, Este trimestre, Curso actual (setembro–xuño), Ano natural actual, ou **Personalizado** (mostra dous selectores de data). Ao premer **"Xerar informe"** calcúlanse os datos dese rango.
 
 ### Contido do informe
-- **4 tarxetas de resumo**: reservas totais, Aprobadas, Pendentes, Rexeitadas (con % de taxa de rexeitamento sobre o total).
-- **Horas de ocupación por espazo**: gráfico de barras coas horas reservadas en cada aula/espazo, de maior a menor. Só conta reservas `Aprobada` e `Pendente` — as `Rexeitada` non chegaron a ocupar nada.
+O informe conta **só as reservas `Aprobada`**, en todos os modos (as pendentes e rexeitadas xa non se contan nin se desagregan).
+
+- **2 tarxetas de resumo**: reservas Aprobadas e horas reservadas (a suma das horas de cada reserva).
+- **Horas de ocupación por espazo**: gráfico de barras coas horas reservadas en cada aula/espazo, de maior a menor. Se unha reserva ocupa varios espazos, as súas horas contan en cada un.
 - **Reservas por tipo de actividade**: gráfico de barras (AFI, Formación PFPP, Reunión interna, Videoconferencia, Docencias compartidas).
 - **Reservas por persoa asesora**: táboa coas iniciais e o número de reservas de cada unha.
 
@@ -118,6 +120,19 @@ Na parte inferior da pestana Informes, o cadro **"🔥 Recordatorios de calefacc
 - Se hai convidadas, cada evento do `.ics` leva `ATTENDEE`; se hai tamén organizadora, o ficheiro vai como `METHOD:REQUEST` (convite) e, se non, como `PUBLISH`.
 - **Non está garantido** que Nextcloud ou Google envíen o correo ao importar; depende do cliente. Hai que verificalo cunha proba. Se non chega, unha alternativa é enviar o `.ics` por correo desde o Apps Script.
 - Os axustes gárdanse **só no navegador** (`localStorage`): non se comparten entre equipos e perdense se se limpan os datos do navegador.
+
+### Modo consulta (persoal administrativo)
+Ligazón directa de só lectura: `https://caixadocorreo.github.io/reservas-cfr/?consulta`
+
+- Abre directamente, **sen PIN nin iniciais**.
+- Mostra só as reservas `Aprobada`, con todos os datos da reserva, incluída a persoa responsable (iniciais).
+- Vistas: Calendario (semana, mes e demais vistas), Informes (só aprobadas) e PDF, e unha Axuda propia.
+- **Non** hai Nova reserva, cancelar, "As miñas reservas", filtro de estado, Axustes, exportación para Sesións nin recordatorios de calefacción.
+- Refrescase cada 60 segundos; Google pode tardar uns minutos en publicar os cambios do Sheet.
+- O rótulo "Modo consulta · só reservas aprobadas" aparece na cabeceira.
+- A ligazón normal (sen `?consulta`) segue pedindo PIN e iniciais.
+
+**Aviso de seguridade:** non é un control de acceso real. Quen teña a ligazón pode abrila, e os datos saen dos mesmos CSV publicados do Sheet, accesibles a quen teña a súa ligazón. O modo consulta só evita que o persoal poida reservar ou cancelar por erro.
 
 ---
 

@@ -908,6 +908,15 @@
   .axuda-estado-item { display:flex;align-items:center;gap:8px;font-size:13px; }
   .axuda-cor { width:16px;height:16px;border-radius:3px;flex-shrink:0; }
 
+  /* Modo consulta (ligazón ?consulta): só lectura */
+  body.modo-consulta .nav-tab[data-solo-normal],
+  body.modo-consulta #btn-exportar-sesions,
+  body.modo-consulta #calefaccion-card,
+  body.modo-consulta #filtro-estado,
+  body.modo-consulta .filtro-miñas,
+  body.modo-consulta .axuda-no-consulta { display: none !important; }
+  body:not(.modo-consulta) .axuda-solo-consulta { display: none; }
+
   /* PDF / Impresión */
   @media print {
     body { background: white; font-size: 11px; }
@@ -1018,9 +1027,9 @@
   <nav class="nav-tabs">
     <button class="nav-tab activo" onclick="mostrarPanel('calendario')">📅 Calendario</button>
     <button class="nav-tab" onclick="mostrarPanel('informes')">📊 Informes</button>
-    <button class="nav-tab" onclick="mostrarPanel('nova-reserva')">➕ Nova reserva</button>
+    <button class="nav-tab" data-solo-normal onclick="mostrarPanel('nova-reserva')">➕ Nova reserva</button>
     <button class="nav-tab" onclick="mostrarPanel('axuda')">❓ Axuda</button>
-    <button class="nav-tab" onclick="mostrarPanel('axustes')">⚙️ Axustes</button>
+    <button class="nav-tab" data-solo-normal onclick="mostrarPanel('axustes')">⚙️ Axustes</button>
   </nav>
 
   <main>
@@ -1066,7 +1075,7 @@
       </div>
 
       <div id="btn-exportar-wrap" style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-secundario" onclick="exportarSemana()" style="font-size:13px">📋 Exportar semana para Sesións</button>
+        <button class="btn btn-secundario" id="btn-exportar-sesions" onclick="exportarSemana()" style="font-size:13px">📋 Exportar semana para Sesións</button>
         <button class="btn btn-secundario" onclick="exportarPDF()" style="font-size:13px">🖨️ Descargar PDF</button>
       </div>
       <div id="btn-pdf-mes-wrap" style="margin-bottom:12px;display:none">
@@ -1370,7 +1379,14 @@
 
     <!-- PANEL AXUDA -->
     <div id="panel-axuda" class="panel">
-      <div class="axuda-seccion">
+      <div class="axuda-seccion axuda-solo-consulta">
+        <div class="axuda-seccion-cab aberto" onclick="toggleAxuda(this)">👁️ Modo consulta <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo aberto">
+          <p>Estás na <strong>vista de consulta</strong>: só se mostran as reservas <strong>aprobadas</strong> e non se pode reservar, cancelar nin modificar nada. A información actualízase soa cada 60 segundos (Google pode tardar uns minutos en publicar os cambios do Sheet).</p>
+          <p>Premendo nunha reserva ves todos os datos, incluída a persoa responsable da actividade. En <strong>Informes</strong> tes o informe de ocupación (só reservas aprobadas) e a descarga en PDF.</p>
+        </div>
+      </div>
+      <div class="axuda-seccion axuda-no-consulta">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🔐 Acceso á aplicación <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <p>PIN do centro + iniciais (1ª letra nome + 1ª letra cada apelido en maiúsculas). Ex: Ana Martínez García → <span class="axuda-tag">AMG</span></p>
@@ -1388,19 +1404,19 @@
           <p>Vistas: <strong>Semana</strong> (luns–sábado), <strong>Mes</strong>, <strong>Set–Dec</strong>, <strong>Xan–Mar</strong>, <strong>Abr–Xuñ</strong>. Domingos en gris. Actualízase cada 60 segundos.</p>
           <div class="axuda-nota">Preme en calquera evento para ver todos os seus detalles.</div>
           <div class="axuda-nota">Se a reserva é túa e segue <strong>Pendente</strong>, no panel de detalle aparece un botón para cancelala.</div>
-          <div class="axuda-nota">A casa <strong>"As miñas reservas"</strong> filtra o calendario para amosar só as túas, combinable cos filtros de espazo e estado.</div>
+          <div class="axuda-nota axuda-no-consulta">A casa <strong>"As miñas reservas"</strong> filtra o calendario para amosar só as túas, combinable cos filtros de espazo e estado.</div>
         </div>
       </div>
       <div class="axuda-seccion">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">📊 Informes de ocupación <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <p>Escolle un <strong>período</strong> (mes, trimestre, curso, ano ou datas personalizadas) e preme <strong>"Xerar informe"</strong>.</p>
-          <div class="axuda-nota">Amosa reservas totais por estado, horas de ocupación por espazo, reservas por tipo de actividade e por persoa asesora.</div>
+          <div class="axuda-nota">O informe conta só as reservas <strong>Aprobadas</strong>: total de reservas e de horas, horas de ocupación por espazo, reservas por tipo de actividade e por persoa asesora.</div>
           <div class="axuda-nota">As horas de ocupación só contan reservas Aprobadas e Pendentes — as Rexeitadas non se inclúen.</div>
           <div class="axuda-nota">Botón <strong>"🖨️ Descargar PDF"</strong> dispoñible despois de xerar o informe.</div>
         </div>
       </div>
-      <div class="axuda-seccion">
+      <div class="axuda-seccion axuda-no-consulta">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">➕ Nova reserva <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <table class="axuda-tabla">
@@ -1425,20 +1441,20 @@
           <div class="axuda-nota">Ao previsualizar, se algún espazo xa está reservado (Pendente ou Aprobada) nesa data e horario, aparece un aviso laranxa co detalle do conflito. Non impide enviar a reserva, só avisa antes de confirmar.</div>
         </div>
       </div>
-      <div class="axuda-seccion">
+      <div class="axuda-seccion axuda-no-consulta">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">✅ Xestión (persoa responsable) <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <p>Xestiona directamente no <strong>Google Sheet</strong> → columna <strong>P (Estado)</strong>: <span class="axuda-tag">Pendente</span> → <span class="axuda-tag">Aprobada</span> ou <span class="axuda-tag">Rexeitada</span>.</p>
           <div class="axuda-nota">Usa <strong>Datos → Crear un filtro</strong> para ordenar e filtrar sen alterar os datos reais.</div>
         </div>
       </div>
-      <div class="axuda-seccion">
+      <div class="axuda-seccion axuda-no-consulta">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">📋 Exportar para cartelería TV <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <p>Na vista <strong>Semana</strong>, o botón <strong>"📋 Exportar semana para Sesións"</strong> xera os datos das reservas Aprobadas de tipo AFI, Formación PFPP ou Cesión de espazo a terceiros, listo para copiar e pegar na folla de Sesións da cartelería TV. As reservas en "Espazo externo" nunca se inclúen, sexa cal sexa o tipo.</p>
         </div>
       </div>
-      <div class="axuda-seccion">
+      <div class="axuda-seccion axuda-no-consulta">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🔥 Recordatorios de calefacción (.ics) <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <p>Na pestana <strong>Informes</strong>, o cadro <strong>"Recordatorios de calefacción"</strong> xera un ficheiro <span class="axuda-tag">.ics</span> para importar no calendario. Inclúe só reservas <strong>Aprobadas</strong> (todos os tipos) en espazos do CFR; "Espazo externo" non conta.</p>
@@ -1461,7 +1477,14 @@
           <p>Dispoñible en todas as vistas. Abre o diálogo de impresión en formato A4 apaisado. Para gardar como PDF selecciona "Gardar como PDF" como impresora.</p>
         </div>
       </div>
-      <div class="axuda-seccion">
+      <div class="axuda-seccion axuda-no-consulta">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">👁️ Ligazón de consulta (persoal administrativo) <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <p>Engadindo <span class="axuda-tag">?consulta</span> ao final da ligazón da aplicación (<span class="axuda-tag">https://caixadocorreo.github.io/reservas-cfr/?consulta</span>) ábrese o <strong>modo consulta</strong>: sen PIN nin iniciais, só lectura, só reservas <strong>aprobadas</strong>, con calendario (semana e mes), informes e PDF. Non permite reservar, cancelar, axustes nin exportacións.</p>
+          <div class="axuda-nota">Non é un control de acceso: quen teña a ligazón pode abrila. Os datos proceden dos mesmos CSV publicados do Sheet.</div>
+        </div>
+      </div>
+      <div class="axuda-seccion axuda-no-consulta">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🔧 Mantemento <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
           <table class="axuda-tabla">
@@ -1524,7 +1547,7 @@ const CSV_CATALOGO_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRINyq
 let CATALOGO = [];
 const CSV_RECURSOS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1567420509&single=true&output=csv';
 const CSV_RESERVAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=0&single=true&output=csv'; // Cambiar por PIN real
-const CSV_ANPA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQNdzPM55N3O5MD-hVBNG90nYW9GpvQWjfm-BpwNcHJKaIVxDEuFMdYE6_IzSk-_RXJqFs7S0-D9R_-/pub?output=csv'; // Folla "ANPA" publicada en CSV (só para os recordatorios de calefacción). Ver LEEME, sección ANPA.
+const CSV_ANPA_URL = 'PENDENTE_URL_ANPA'; // Folla "ANPA" publicada en CSV (só para os recordatorios de calefacción). Ver LEEME, sección ANPA.
 const CSV_ASESORAS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQu3GaY50_3tBLmPP8SaXM-pICOuhdJx9_DvdG538dQZ0-gqWIKfZoXPxjRK-VzDRzYF57XCv2PXVnd/pub?gid=1331552294&single=true&output=csv';
 
 const ESPAZOS_TODOS = [
@@ -1555,6 +1578,8 @@ const RECURSOS = [
 // ESTADO
 // ============================================================
 let usuarioActual = '';
+// Modo consulta: ligazón ...?consulta — só lectura, só reservas Aprobada, sen PIN
+const MODO_CONSULTA = new URLSearchParams(location.search).has('consulta');
 let espazosSeleccionados = [];
 let vistaActual = 'semana';
 let semanaOffset = 0;
@@ -1605,6 +1630,15 @@ function fazerLogin() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   document.getElementById('header-usuario').textContent = `Conectado/a como: ${ases}`;
+  iniciar();
+}
+
+function iniciarModoConsulta() {
+  document.body.classList.add('modo-consulta');
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('header-usuario').textContent = 'Modo consulta · só reservas aprobadas';
+  document.title = 'Consulta de reservas · CFR de Vigo';
   iniciar();
 }
 
@@ -2371,7 +2405,8 @@ async function cargarReservas() {
         observacions: cols[14] || '',
         estado:    cols[15] || 'Pendente',
       };
-    }).filter(r => r.asesora && r.asesora.trim() !== '');
+    }).filter(r => r.asesora && r.asesora.trim() !== '')
+      .filter(r => !MODO_CONSULTA || r.estado === 'Aprobada');
     console.log('Reservas cargadas:', reservas.length, reservas.map(r => r.data));
     renderCalendario();
   } catch(e) {
@@ -2570,7 +2605,7 @@ function verDetalle(id) {
   const r = reservas.find(x => x.id === id);
   if (!r) return;
   const [a,m,d] = r.data.split('-');
-  const podeCancelar = r.estado === 'Pendente' && r.asesora === usuarioActual && r.filaNum >= 2;
+  const podeCancelar = !MODO_CONSULTA && r.estado === 'Pendente' && r.asesora === usuarioActual && r.filaNum >= 2;
   document.getElementById('modal-corpo').innerHTML = `
     <div class="modal-fila"><strong>Estado</strong><span><span class="estado-badge ${r.estado.toLowerCase()}">${r.estado}</span></span></div>
     <div class="modal-fila"><strong>Persoa</strong><span>${r.asesora}</span></div>
@@ -2670,23 +2705,22 @@ function xerarInforme() {
     return;
   }
 
+  // O informe conta só reservas Aprobada (en todos os modos)
   const enRango = reservas.filter(r => {
-    if (!r.data) return false;
+    if (!r.data || r.estado !== 'Aprobada') return false;
     const d = new Date(r.data + 'T00:00:00');
     return d >= rango.desde && d <= rango.ata;
   });
 
   const total = enRango.length;
-  const nAprobada = enRango.filter(r => r.estado === 'Aprobada').length;
-  const nPendente = enRango.filter(r => r.estado === 'Pendente').length;
-  const nRexeitada = enRango.filter(r => r.estado === 'Rexeitada').length;
-  const taxaRexeitamento = total > 0 ? Math.round((nRexeitada / total) * 100) : 0;
 
-  // Horas por espazo (só reservas Aprobada + Pendente: as Rexeitadas non chegaron a ocupar nada)
+  // Horas por espazo
   const horasPorEspazo = {};
-  enRango.filter(r => r.estado !== 'Rexeitada').forEach(r => {
+  let horasTotais = 0;
+  enRango.forEach(r => {
     const dur = horaAMinutos(r.horaFin) !== null && horaAMinutos(r.horaInicio) !== null
       ? (horaAMinutos(r.horaFin) - horaAMinutos(r.horaInicio)) / 60 : 0;
+    horasTotais += dur;
     (r.espazos || '').split(';').map(e => e.trim()).filter(Boolean).forEach(esp => {
       horasPorEspazo[esp] = (horasPorEspazo[esp] || 0) + dur;
     });
@@ -2702,15 +2736,13 @@ function xerarInforme() {
 
   cont.innerHTML = `
     <div class="informe-resumo-grid">
-      <div class="informe-tarxeta"><div class="valor">${total}</div><div class="etiqueta">Reservas totais</div></div>
-      <div class="informe-tarxeta"><div class="valor verde">${nAprobada}</div><div class="etiqueta">Aprobadas</div></div>
-      <div class="informe-tarxeta"><div class="valor laranxa">${nPendente}</div><div class="etiqueta">Pendentes</div></div>
-      <div class="informe-tarxeta"><div class="valor vermello">${nRexeitada}</div><div class="etiqueta">Rexeitadas (${taxaRexeitamento}%)</div></div>
+      <div class="informe-tarxeta"><div class="valor verde">${total}</div><div class="etiqueta">Reservas aprobadas</div></div>
+      <div class="informe-tarxeta"><div class="valor">${Math.round(horasTotais * 10) / 10}</div><div class="etiqueta">Horas reservadas (sumadas por reserva)</div></div>
     </div>
     <div class="informe-bloque">
       <h4>Horas de ocupación por espazo</h4>
       ${renderBarrasInforme(horasPorEspazo, 'h')}
-      <div class="informe-nota">Inclúe reservas Aprobadas e Pendentes; exclúe Rexeitadas.</div>
+      <div class="informe-nota">Só reservas Aprobadas. Se unha reserva ocupa varios espazos, as súas horas contan en cada espazo.</div>
     </div>
     <div class="informe-bloque">
       <h4>Reservas por tipo de actividade</h4>
@@ -3196,6 +3228,7 @@ function pecharmModal(e) {
 // NAVEGACIÓN
 // ============================================================
 function mostrarPanel(id) {
+  if (MODO_CONSULTA && (id === 'nova-reserva' || id === 'axustes')) id = 'calendario';
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('activo'));
   document.getElementById('panel-' + id).classList.add('activo');
@@ -3227,6 +3260,8 @@ function ocultarAlertas() {
   document.getElementById('alerta-exito').style.display = 'none';
   document.getElementById('alerta-erro').style.display = 'none';
 }
+
+if (MODO_CONSULTA) iniciarModoConsulta();
 </script>
 </body>
 </html>
