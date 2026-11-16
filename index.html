@@ -908,6 +908,19 @@
   .axuda-estado-item { display:flex;align-items:center;gap:8px;font-size:13px; }
   .axuda-cor { width:16px;height:16px;border-radius:3px;flex-shrink:0; }
 
+  /* Planning de limpeza */
+  .limp-dia { background:white;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.12);margin-bottom:16px;overflow:hidden; }
+  .limp-dia-cab { background:var(--azul);color:white;padding:10px 16px;font-weight:700;font-size:15px; }
+  .limp-dia-corpo { padding:12px 16px; }
+  .limp-aviso { background:#fff8e1;border-left:3px solid #f9a825;border-radius:0 6px 6px 0;padding:8px 12px;margin:0 0 10px;font-size:13px;color:#6d4c00; }
+  .limp-sec { font-weight:700;font-size:13px;margin:12px 0 4px;color:var(--azul-escuro); }
+  .limp-andar { font-size:12px;font-weight:700;color:#555;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.03em; }
+  .limp-taboa { width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px; }
+  .limp-taboa th { text-align:left;font-size:11px;color:#666;font-weight:600;border-bottom:1px solid #ddd;padding:3px 6px; }
+  .limp-taboa td { padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top; }
+  .limp-aviso-curto { color:#b71c1c;font-weight:600; }
+  .limp-buido { color:#777;font-size:13px;margin:4px 0; }
+
   /* Modo consulta (ligazón ?consulta): só lectura */
   body.modo-consulta .nav-tab[data-solo-normal],
   body.modo-consulta #btn-exportar-sesions,
@@ -940,7 +953,8 @@
     .evento { font-size: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .multi-mes-grid.catro { grid-template-columns: repeat(2, 1fr); }
     .multi-mes-grid.tres { grid-template-columns: repeat(3, 1fr); }
-    #informe-controis-card, #calefaccion-card { display: none !important; }
+    #informe-controis-card, #calefaccion-card, #limpeza-controis-card { display: none !important; }
+    .limp-dia { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
     .informe-tarxeta, .informe-bloque { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
     .informe-barra-encher { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     @page { margin: 1.5cm; size: A4 landscape; }
@@ -1027,6 +1041,7 @@
   <nav class="nav-tabs">
     <button class="nav-tab activo" onclick="mostrarPanel('calendario')">📅 Calendario</button>
     <button class="nav-tab" onclick="mostrarPanel('informes')">📊 Informes</button>
+    <button class="nav-tab" onclick="mostrarPanel('limpeza')">🧹 Limpeza</button>
     <button class="nav-tab" data-solo-normal onclick="mostrarPanel('nova-reserva')">➕ Nova reserva</button>
     <button class="nav-tab" onclick="mostrarPanel('axuda')">❓ Axuda</button>
     <button class="nav-tab" data-solo-normal onclick="mostrarPanel('axustes')">⚙️ Axustes</button>
@@ -1155,6 +1170,37 @@
         </div>
         <div id="cal-ics-resultado" style="margin-top:12px;font-size:13px"></div>
       </div>
+    </div>
+
+    <!-- ================================================
+         PANEL LIMPEZA
+    ================================================ -->
+    <div id="panel-limpeza" class="panel">
+      <div class="form-card" id="limpeza-controis-card">
+        <h3>🧹 Planning de limpeza</h3>
+        <p style="font-size:13px;color:#555;margin-bottom:12px">Calcúlase a partir das reservas <strong>Aprobadas</strong> (sen "Espazo externo"). A persoa de limpeza traballa de luns a venres de 08:30 a 15:30. Cada día lístanse os espazos usados na xornada anterior, con prioridade para os que se volven usar hoxe.</p>
+        <div class="form-grid tres">
+          <div class="campo">
+            <label>Vista</label>
+            <select id="limpeza-vista" onchange="xerarLimpeza()">
+              <option value="dia">Un día</option>
+              <option value="semana">Semana (luns a venres)</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label>Data</label>
+            <input type="date" id="limpeza-data" onchange="xerarLimpeza()">
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-secundario" onclick="limpezaHoxe()">Hoxe</button>
+          <button class="btn btn-secundario" onclick="limpezaAnteriorSeguinte(-1)">‹ Anterior</button>
+          <button class="btn btn-secundario" onclick="limpezaAnteriorSeguinte(1)">Seguinte ›</button>
+          <button class="btn btn-primario" onclick="exportarLimpezaPDF()">🖨️ Descargar PDF</button>
+        </div>
+      </div>
+      <div id="limpeza-cabeceira-dyn" class="pdf-cabeceira"></div>
+      <div id="limpeza-resultado"></div>
     </div>
 
     <!-- ================================================
@@ -1383,7 +1429,7 @@
         <div class="axuda-seccion-cab aberto" onclick="toggleAxuda(this)">👁️ Modo consulta <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo aberto">
           <p>Estás na <strong>vista de consulta</strong>: só se mostran as reservas <strong>aprobadas</strong> e non se pode reservar, cancelar nin modificar nada. A información actualízase soa cada 60 segundos (Google pode tardar uns minutos en publicar os cambios do Sheet).</p>
-          <p>Premendo nunha reserva ves todos os datos, incluída a persoa responsable da actividade. En <strong>Informes</strong> tes o informe de ocupación (só reservas aprobadas) e a descarga en PDF.</p>
+          <p>Premendo nunha reserva ves todos os datos, incluída a persoa responsable da actividade. En <strong>Informes</strong> tes o informe de ocupación (só reservas aprobadas) e en <strong>Limpeza</strong> o planning de limpeza, ambos con descarga en PDF.</p>
         </div>
       </div>
       <div class="axuda-seccion axuda-no-consulta">
@@ -1441,6 +1487,20 @@
           <div class="axuda-nota">Ao previsualizar, se algún espazo xa está reservado (Pendente ou Aprobada) nesa data e horario, aparece un aviso laranxa co detalle do conflito. Non impide enviar a reserva, só avisa antes de confirmar.</div>
         </div>
       </div>
+      <div class="axuda-seccion">
+        <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">🧹 Planning de limpeza <span class="icona-toggle">▾</span></div>
+        <div class="axuda-seccion-corpo">
+          <p>A pestana <strong>Limpeza</strong> mostra, para un día ou unha semana (luns a venres), os espazos que hai que limpar segundo as reservas <strong>Aprobadas</strong> (sen "Espazo externo"). A persoa de limpeza traballa de 08:30 a 15:30.</p>
+          <ul>
+            <li><strong>Prioridade 1:</strong> usados na xornada anterior e que se volven usar hoxe. Hai que limpalos antes do primeiro uso (móstrase o límite e un aviso se o uso empeza dentro do horario de limpeza).</li>
+            <li><strong>Prioridade 2:</strong> usados na xornada anterior, sen uso hoxe. Móstrase cando se volven usar.</li>
+            <li>O luns a "xornada anterior" son o venres e o sábado. Os espazos ordénanse por andar.</li>
+            <li><strong>Venres con actividade o sábado e o venres:</strong> mañá reducida (08:30–12:30) e mantemento xeral a última hora da tarde, cos espazos usados ese venres e os do sábado. <strong>Só sábado:</strong> o venres pola mañá déixanse preparados os espazos do sábado. <strong>Só venres:</strong> venres normal.</li>
+          </ul>
+          <p>O botón <strong>🖨️ Descargar PDF</strong> imprime o día ou a semana seleccionados.</p>
+          <div class="axuda-nota">Os espazos sen uso na xornada anterior non aparecen. O planning cambia se despois se aproban ou cancelan reservas.</div>
+        </div>
+      </div>
       <div class="axuda-seccion axuda-no-consulta">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">✅ Xestión (persoa responsable) <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
@@ -1480,7 +1540,7 @@
       <div class="axuda-seccion axuda-no-consulta">
         <div class="axuda-seccion-cab" onclick="toggleAxuda(this)">👁️ Ligazón de consulta (persoal administrativo) <span class="icona-toggle">▾</span></div>
         <div class="axuda-seccion-corpo">
-          <p>Engadindo <span class="axuda-tag">?consulta</span> ao final da ligazón da aplicación (<span class="axuda-tag">https://caixadocorreo.github.io/reservas-cfr/?consulta</span>) ábrese o <strong>modo consulta</strong>: sen PIN nin iniciais, só lectura, só reservas <strong>aprobadas</strong>, con calendario (semana e mes), informes e PDF. Non permite reservar, cancelar, axustes nin exportacións.</p>
+          <p>Engadindo <span class="axuda-tag">?consulta</span> ao final da ligazón da aplicación (<span class="axuda-tag">https://caixadocorreo.github.io/reservas-cfr/?consulta</span>) ábrese o <strong>modo consulta</strong>: sen PIN nin iniciais, só lectura, só reservas <strong>aprobadas</strong>, con calendario (semana e mes), informes, planning de limpeza e PDF. Non permite reservar, cancelar, axustes nin exportacións.</p>
           <div class="axuda-nota">Non é un control de acceso: quen teña a ligazón pode abrila. Os datos proceden dos mesmos CSV publicados do Sheet.</div>
         </div>
       </div>
@@ -2409,6 +2469,7 @@ async function cargarReservas() {
       .filter(r => !MODO_CONSULTA || r.estado === 'Aprobada');
     console.log('Reservas cargadas:', reservas.length, reservas.map(r => r.data));
     renderCalendario();
+    if (document.getElementById('panel-limpeza').classList.contains('activo')) xerarLimpeza();
   } catch(e) {
     console.error('Erro ao cargar reservas:', e);
     reservas = [];
@@ -2648,6 +2709,197 @@ async function cancelarReserva(filaNum) {
     alert('Non se puido cancelar por un problema de conexión. Téntao de novo.');
     if (boton) { boton.disabled = false; boton.textContent = 'Cancelar esta reserva'; }
   }
+}
+
+// ============================================================
+// PLANNING DE LIMPEZA
+// ============================================================
+const LIMPEZA_INICIO = 8*60 + 30;               // 08:30
+const LIMPEZA_FIN = 15*60 + 30;                 // 15:30
+const LIMPEZA_FIN_VENRES_REDUCIDO = 12*60 + 30; // 12:30 (venres con actividade tamén o sábado)
+const LIMPEZA_DIAS = ['Domingo','Luns','Martes','Mércores','Xoves','Venres','Sábado'];
+const LIMPEZA_ANDARES = ['Planta baixa','1º andar','2º andar','Outros espazos'];
+
+function hhmmMin(min) { return String(Math.floor(min/60)).padStart(2,'0') + ':' + String(min%60).padStart(2,'0'); }
+function escLimp(t) { return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+// { 'AAAA-MM-DD': { espazo: [{ini, fin}] } } só con reservas Aprobada e sen "Espazo externo"
+function usosPorDiaLimpeza() {
+  const usos = {};
+  reservas.forEach(r => {
+    if (r.estado !== 'Aprobada' || !r.data) return;
+    const ini = horaAMinutos(r.horaInicio), fin = horaAMinutos(r.horaFin);
+    (r.espazos || '').split(';').map(e => e.trim()).filter(e => e && e !== 'Espazo externo').forEach(e => {
+      usos[r.data] = usos[r.data] || {};
+      (usos[r.data][e] = usos[r.data][e] || []).push({ ini, fin });
+    });
+  });
+  return usos;
+}
+function andarDeEspazo(nome) { const e = ESPAZOS_TODOS.find(x => x.nome === nome); return e ? e.andar : 'Outros espazos'; }
+function textoUsos(lista) {
+  return lista.slice().sort((a,b) => (a.ini ?? 0) - (b.ini ?? 0))
+    .map(u => (u.ini !== null && u.fin !== null) ? `${hhmmMin(u.ini)}–${hhmmMin(u.fin)}` : 'horario non indicado').join(', ');
+}
+function tipoVenresLimpeza(venres, usos) {
+  const hF = Object.keys(usos[venres] || {}).length > 0;
+  const hS = Object.keys(usos[icsSumarDias(venres, 1)] || {}).length > 0;
+  return hF && hS ? 'ambos' : hS ? 'so-sabado' : hF ? 'so-venres' : 'normal';
+}
+
+// Devolve o plan dun día (luns a venres) ou null para sábado/domingo
+function planLimpezaDia(data, usos) {
+  const dow = icsData(data).getDay();
+  if (dow === 0 || dow === 6) return null;
+  const usoHoxe = usos[data] || {};
+  const venresTipo = dow === 5 ? tipoVenresLimpeza(data, usos) : null;
+  const fin = venresTipo === 'ambos' ? LIMPEZA_FIN_VENRES_REDUCIDO : LIMPEZA_FIN;
+
+  // Espazos sucios: usados na xornada anterior (o luns, venres e sábado)
+  const prevDatas = dow === 1 ? [icsSumarDias(data, -3), icsSumarDias(data, -2)] : [icsSumarDias(data, -1)];
+  const sucios = {}; // espazo -> [texto]
+  prevDatas.forEach(pd => {
+    const pdDow = icsData(pd).getDay();
+    const usosPd = usos[pd] || {};
+    const limpoNaTarde = pdDow === 5 && tipoVenresLimpeza(pd, usos) === 'ambos'; // o venres con tarde limpouse xa
+    Object.keys(usosPd).forEach(e => {
+      if (limpoNaTarde && !(usos[icsSumarDias(pd, 1)] || {})[e]) return;
+      (sucios[e] = sucios[e] || []).push(`${DIAS_CURTOS[pdDow]} ${pd.slice(8)}/${pd.slice(5,7)} ${textoUsos(usosPd[e])}`);
+    });
+  });
+
+  const itens = {}; // espazo -> {prio, anterior, hoxe, limite, motivos[], proximo}
+  Object.keys(sucios).forEach(e => {
+    const hoxeUsos = usoHoxe[e];
+    const inis = hoxeUsos ? hoxeUsos.map(u => u.ini).filter(x => x !== null) : [];
+    itens[e] = { espazo: e, prio: hoxeUsos ? 1 : 2, anterior: sucios[e].join(' · '),
+      hoxe: hoxeUsos ? textoUsos(hoxeUsos) : '', limite: inis.length ? Math.min(...inis) : null, motivos: [] };
+  });
+  // Venres con actividade só o sábado: deixar preparados os espazos do sábado
+  if (venresTipo === 'so-sabado') {
+    const sab = usos[icsSumarDias(data, 1)] || {};
+    Object.keys(sab).forEach(e => {
+      if (!itens[e]) itens[e] = { espazo: e, prio: 1, anterior: '—', hoxe: usoHoxe[e] ? textoUsos(usoHoxe[e]) : '', limite: null, motivos: [] };
+      itens[e].prio = 1;
+      itens[e].motivos.push(`Preparar para o sábado (${textoUsos(sab[e])})`);
+    });
+  }
+  // Próximo uso para os de prioridade 2
+  const datasFuturas = Object.keys(usos).filter(d => d > data).sort();
+  Object.values(itens).forEach(it => {
+    if (it.prio === 2) {
+      const d = datasFuturas.find(x => usos[x][it.espazo]);
+      it.proximo = d ? `${DIAS_CURTOS[icsData(d).getDay()]} ${d.slice(8)}/${d.slice(5,7)} ${textoUsos(usos[d][it.espazo])}` : 'sen uso previsto';
+    }
+  });
+
+  // Tarde do venres (só se hai actividade venres e sábado)
+  let tarde = null;
+  if (venresTipo === 'ambos') {
+    const sab = usos[icsSumarDias(data, 1)] || {};
+    const mapa = {};
+    Object.keys(usoHoxe).forEach(e => { (mapa[e] = mapa[e] || []).push(`Usado hoxe (${textoUsos(usoHoxe[e])}): limpar despois do uso`); });
+    Object.keys(sab).forEach(e => { (mapa[e] = mapa[e] || []).push(`Para o sábado (${textoUsos(sab[e])}): deixar listo`); });
+    tarde = Object.keys(mapa).map(e => ({ espazo: e, motivos: mapa[e] }));
+  }
+  return { data, dow, venresTipo, fin, itens: Object.values(itens), tarde };
+}
+
+function taboaPorAndar(lista, cabeceiras, filaFn) {
+  if (!lista.length) return '';
+  let html = '';
+  LIMPEZA_ANDARES.forEach(andar => {
+    const doAndar = lista.filter(x => andarDeEspazo(x.espazo) === andar).sort((a,b) => a.espazo.localeCompare(b.espazo, 'gl', {numeric: true}));
+    if (!doAndar.length) return;
+    html += `<div class="limp-andar">${andar}</div><table class="limp-taboa"><tr>${cabeceiras.map(c => `<th>${c}</th>`).join('')}</tr>${doAndar.map(filaFn).join('')}</table>`;
+  });
+  return html;
+}
+
+function renderPlanLimpeza(plan) {
+  const [a,m,d] = plan.data.split('-');
+  const tit = `${LIMPEZA_DIAS[plan.dow]} ${d}/${m}/${a}`;
+  let corpo = '';
+  const xanela = `${hhmmMin(LIMPEZA_INICIO)}–${hhmmMin(plan.fin)}`;
+  corpo += `<div class="limp-sec" style="margin-top:0">Horario de limpeza: ${xanela}</div>`;
+  if (plan.venresTipo === 'ambos') corpo += `<div class="limp-aviso">Venres con actividade tamén o sábado: horario da mañá reducido e mantemento xeral a última hora da tarde.</div>`;
+  if (plan.venresTipo === 'so-sabado') corpo += `<div class="limp-aviso">Hai actividade o sábado e non o venres: hoxe déixanse preparados os espazos do sábado.</div>`;
+
+  const p1 = plan.itens.filter(x => x.prio === 1), p2 = plan.itens.filter(x => x.prio === 2);
+  corpo += `<div class="limp-sec">Prioridade 1 — limpar antes do uso de hoxe</div>`;
+  if (!p1.length) corpo += `<div class="limp-buido">Ningún espazo.</div>`;
+  else corpo += taboaPorAndar(p1, ['Espazo','Usado antes','Uso hoxe','Límite / motivo'], it => {
+    let lim = '';
+    if (it.limite !== null) {
+      lim = `Antes das ${hhmmMin(it.limite)}`;
+      if (it.limite < plan.fin) lim += it.limite <= LIMPEZA_INICIO ? ` <span class="limp-aviso-curto">⚠ uso antes de empezar a limpeza</span>` : ` <span class="limp-aviso-curto">⚠ dispoñible só ${hhmmMin(LIMPEZA_INICIO)}–${hhmmMin(it.limite)}</span>`;
+    }
+    if (it.motivos.length) lim += (lim ? '<br>' : '') + it.motivos.map(escLimp).join('<br>');
+    return `<tr><td><strong>${escLimp(it.espazo)}</strong></td><td>${escLimp(it.anterior)}</td><td>${escLimp(it.hoxe || '—')}</td><td>${lim || '—'}</td></tr>`;
+  });
+  corpo += `<div class="limp-sec">Prioridade 2 — usados antes, sen uso hoxe</div>`;
+  if (!p2.length) corpo += `<div class="limp-buido">Ningún espazo.</div>`;
+  else corpo += taboaPorAndar(p2, ['Espazo','Usado antes','Próximo uso'], it =>
+    `<tr><td><strong>${escLimp(it.espazo)}</strong></td><td>${escLimp(it.anterior)}</td><td>${escLimp(it.proximo || '—')}</td></tr>`);
+
+  if (plan.tarde) {
+    corpo += `<div class="limp-sec">Tarde (última hora): mantemento xeral</div>`;
+    corpo += `<div class="limp-aviso">Mantemento xeral: baños, papeleiras e limpeza máis groso.</div>`;
+    corpo += taboaPorAndar(plan.tarde, ['Espazo','Motivo'], it => `<tr><td><strong>${escLimp(it.espazo)}</strong></td><td>${it.motivos.map(escLimp).join('<br>')}</td></tr>`);
+  }
+  return `<div class="limp-dia"><div class="limp-dia-cab">${tit}</div><div class="limp-dia-corpo">${corpo}</div></div>`;
+}
+
+function datasLimpezaSeleccionadas() {
+  const vista = document.getElementById('limpeza-vista').value;
+  const data = document.getElementById('limpeza-data').value;
+  if (!data) return null;
+  if (vista === 'dia') return [data];
+  const dow = icsData(data).getDay();
+  const lun = icsSumarDias(data, dow === 0 ? 1 : -(dow - 1));
+  return [0,1,2,3,4].map(i => icsSumarDias(lun, i));
+}
+
+function xerarLimpeza() {
+  const cont = document.getElementById('limpeza-resultado');
+  const datas = datasLimpezaSeleccionadas();
+  if (!datas) { cont.innerHTML = '<p style="color:#c62828">Escolle unha data.</p>'; return; }
+  const usos = usosPorDiaLimpeza();
+  cont.innerHTML = datas.map(d => {
+    const plan = planLimpezaDia(d, usos);
+    if (!plan) {
+      const dow = icsData(d).getDay();
+      const [a,m,dd] = d.split('-');
+      return `<div class="limp-dia"><div class="limp-dia-cab">${LIMPEZA_DIAS[dow]} ${dd}/${m}/${a}</div><div class="limp-dia-corpo"><div class="limp-buido">${dow === 6 ? 'Sábado: non hai persoal de limpeza. O mantemento faise o venres.' : 'Domingo: non hai persoal de limpeza.'}</div></div></div>`;
+    }
+    return renderPlanLimpeza(plan);
+  }).join('');
+}
+
+function prepararPanelLimpeza() {
+  const inp = document.getElementById('limpeza-data');
+  if (!inp.value) inp.value = fmt(new Date());
+  xerarLimpeza();
+}
+function limpezaHoxe() { document.getElementById('limpeza-data').value = fmt(new Date()); xerarLimpeza(); }
+function limpezaAnteriorSeguinte(sinal) {
+  const vista = document.getElementById('limpeza-vista').value;
+  const inp = document.getElementById('limpeza-data');
+  if (!inp.value) inp.value = fmt(new Date());
+  let d = icsSumarDias(inp.value, sinal * (vista === 'semana' ? 7 : 1));
+  if (vista === 'dia') { // saltar sábados e domingos
+    while ([0,6].includes(icsData(d).getDay())) d = icsSumarDias(d, sinal);
+  }
+  inp.value = d;
+  xerarLimpeza();
+}
+function exportarLimpezaPDF() {
+  const datas = datasLimpezaSeleccionadas();
+  if (!datas) return;
+  const f = x => x.split('-').reverse().join('/');
+  const etiqueta = datas.length === 1 ? f(datas[0]) : `Semana do ${f(datas[0])} ao ${f(datas[datas.length-1])}`;
+  document.getElementById('limpeza-cabeceira-dyn').innerHTML = `<div><div class="pdf-cab-titulo">Planning de limpeza · CFR de Vigo</div><div class="pdf-cab-subtitulo">${etiqueta}</div></div><div class="pdf-cab-logo">CFR DE VIGO<br><span style="font-weight:400;font-size:10px">Centro de Formación e Recursos</span></div>`;
+  window.print();
 }
 
 // ============================================================
@@ -3229,10 +3481,11 @@ function pecharmModal(e) {
 // ============================================================
 function mostrarPanel(id) {
   if (MODO_CONSULTA && (id === 'nova-reserva' || id === 'axustes')) id = 'calendario';
+  if (id === 'limpeza') prepararPanelLimpeza();
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('activo'));
   document.getElementById('panel-' + id).classList.add('activo');
-  const idx = ['calendario','informes','nova-reserva','axuda','axustes'].indexOf(id);
+  const idx = ['calendario','informes','limpeza','nova-reserva','axuda','axustes'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx]?.classList.add('activo');
   if (id === 'axustes') cargarAxustesNoFormulario();
   ocultarAlertas();

@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (modo consulta ?consulta para o persoal administrativo; informes só con reservas aprobadas)*
+*Última actualización: 25/10/2026 (pestana Limpeza: planning de limpeza)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -121,12 +121,34 @@ Na parte inferior da pestana Informes, o cadro **"🔥 Recordatorios de calefacc
 - **Non está garantido** que Nextcloud ou Google envíen o correo ao importar; depende do cliente. Hai que verificalo cunha proba. Se non chega, unha alternativa é enviar o `.ics` por correo desde o Apps Script.
 - Os axustes gárdanse **só no navegador** (`localStorage`): non se comparten entre equipos e perdense se se limpan os datos do navegador.
 
+### Planning de limpeza (pestana "🧹 Limpeza")
+Calcúlase no navegador a partir das reservas `Aprobada`, sen "Espazo externo". Pódese ver **un día** ou **unha semana** (luns a venres), cos botóns Hoxe, Anterior e Seguinte, e imprimir en PDF (A4). Tamén está no modo consulta.
+
+**Horario da persoa de limpeza:** luns a venres, de 08:30 a 15:30. O sábado non vén.
+
+**Regras de cada día**
+- **Prioridade 1:** espazos usados na xornada anterior e que se volven usar hoxe. Hai que limpalos antes do primeiro uso. Móstrase o límite ("Antes das HH:MM") e un aviso ⚠ se ese uso empeza antes das 15:30, con só a franxa dispoñible (ou "uso antes de empezar a limpeza").
+- **Prioridade 2:** espazos usados na xornada anterior e sen uso hoxe, co seu próximo uso.
+- **Xornada anterior:** o día anterior; o **luns**, o venres e o sábado.
+- Os espazos ordénanse por andar (planta baixa, 1º, 2º) e dentro de cada andar por nome. Os que non se usaron na xornada anterior non aparecen. O ANPA non entra.
+
+**Venres**
+| Actividade | Venres pola mañá | Venres pola tarde |
+|---|---|---|
+| Só venres | Normal (08:30–15:30) | — |
+| Só sábado | Normal, e os espazos do sábado aparecen como "Preparar para o sábado" | — |
+| Venres e sábado | Reducida (08:30–12:30) | Mantemento xeral a última hora (baños, papeleiras, o máis groso), cos espazos usados ese venres e os do sábado |
+
+Cando o venres leva mantemento de tarde, os espazos usados ese venres consíderanse limpos o luns, salvo que tamén se usasen o sábado.
+
+**Límites:** non hai número de asistentes nin estado real de limpeza; o planning supón que cada espazo se limpa cando toca. Cambia se despois se aproban ou cancelan reservas. Non coñece festivos nin días sen persoal.
+
 ### Modo consulta (persoal administrativo)
 Ligazón directa de só lectura: `https://caixadocorreo.github.io/reservas-cfr/?consulta`
 
 - Abre directamente, **sen PIN nin iniciais**.
 - Mostra só as reservas `Aprobada`, con todos os datos da reserva, incluída a persoa responsable (iniciais).
-- Vistas: Calendario (semana, mes e demais vistas), Informes (só aprobadas) e PDF, e unha Axuda propia.
+- Vistas: Calendario (semana, mes e demais vistas), Informes (só aprobadas), Limpeza e PDF, e unha Axuda propia.
 - **Non** hai Nova reserva, cancelar, "As miñas reservas", filtro de estado, Axustes, exportación para Sesións nin recordatorios de calefacción.
 - Refrescase cada 60 segundos; Google pode tardar uns minutos en publicar os cambios do Sheet.
 - O rótulo "Modo consulta · só reservas aprobadas" aparece na cabeceira.
