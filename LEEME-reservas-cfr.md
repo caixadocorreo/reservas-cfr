@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (pestana Limpeza: planning de limpeza)*
+*Última actualización: 25/10/2026 (estilo automático de títulos e relatores/as)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -238,6 +238,18 @@ Selección de recursos. A lista cárgase desde a folla `Recursos` do Sheet.
 
 ### Paso 5 — Observacións
 Campo de texto libre para información adicional.
+
+### Estilo dos textos (título e relatores/as)
+Ao previsualizar unha reserva, a aplicación **corrixe automaticamente o formato** e avisa do que cambiou:
+
+- **Título da actividade:** minúscula agás a primeira letra. Exemplo: `Plan De Automatización De Procesos` → `Plan de automatización de procesos`. Conserva as **siglas** (palabras xa en maiúsculas de 2 a 6 letras, como AFI, PFPP, TIC), as palabras con números e os numerais romanos soltos (I, V, X). Se o título está todo en maiúsculas non pode distinguir as siglas e pásao todo a minúscula (agás a primeira letra): revisa o resultado.
+- **Títulos do catálogo:** non se tocan (por exemplo, "Plan Anual de Formación").
+- **Relatores/as:** cada palabra con maiúscula inicial e o resto en minúscula (`ana MARTÍNEZ garcía` → `Ana Martínez García`). As partículas `de, da, do, dos, das, del, la, las, los, y, e` van en minúscula (`María José López de la Fuente`). Varias persoas, separadas por `;`.
+- **Aviso:** se un nome ten menos de tres palabras (sen contar partículas), móstrase un aviso para indicar nome e dous apelidos. **Non bloquea** o envío.
+- **Observacións:** non se tocan. **Cesión de espazo a terceiros:** o campo de solicitante e a columna de relator/a non se tocan, porque poden levar entidades.
+- A corrección faise sobre os campos do formulario (vese o resultado) e repítese ao enviar. Se algo non está ben, edita o campo e volve previsualizar.
+- Só afecta ás reservas **novas**; as que xa están no Sheet non se modifican.
+- **Límite:** non distingue nomes propios no título (Galicia, Vigo, Moodle…); quedarían en minúscula. Os nomes compostos con partículas pouco habituais tamén poden precisar revisión manual.
 
 ### Previsualización e envío
 Antes de enviar móstrase un resumo completo. Ao confirmar, xérase unha fila no Sheet por cada sesión co estado `Pendente`.

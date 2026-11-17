@@ -334,6 +334,8 @@
     min-width: 140px;
   }
   .resumo-fila span { color: #444; }
+  .resumo-estilo { background:#fff8e1;border-left:3px solid #f9a825;border-radius:0 6px 6px 0;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#6d4c00; }
+  .resumo-estilo ul { margin:6px 0 0 18px; }
   .resumo-conflito {
     background: #fff3e0;
     border: 1px solid #f57c00;
@@ -1475,6 +1477,7 @@
           <p style="margin-top:8px">Relator/a(s): separar por <span class="axuda-tag">;</span> se hai varias persoas.</p>
           <div class="axuda-nota">Selector <strong>"Horario predefinido"</strong> (Paso 2 e en cada fila de sesión): preenche automaticamente franxas de tarde habituais (16:30–19:30, 16:30–20:30, 17:00–20:00, 17:00–21:00). Escolle "Persoalizado" para escribir calquera outro horario a man.</div>
           <div class="axuda-nota">Para AFI, Formación PFPP e Cesión de espazo a terceiros, engade unha fila por cada sesión na táboa. O relator/a e os recursos poden variar por sesión.</div>
+          <div class="axuda-nota"><strong>Estilo dos textos</strong>: o <strong>título</strong> escríbese en minúscula agás a primeira letra (as siglas en maiúsculas, como AFI ou TIC, consérvanse; os títulos do catálogo non se tocan). Os <strong>nomes das persoas relatoras</strong> levan maiúscula inicial en cada palabra, con nome e dous apelidos. Ao previsualizar, a aplicación corrixe o formato e avísate do que cambiou; se hai nomes con menos de tres palabras avisa pero non bloquea. Non se aplica ás observacións nin ao campo de solicitante da Cesión de espazo a terceiros, e só afecta ás reservas novas.</div>
           <div class="axuda-nota"><strong>Cesión de espazo a terceiros</strong>: para cando unha entidade externa ou outro centro solicita un espazo do CFR. Pide indicar quen o solicita; si aparece na cartelería TV, a diferenza de "Espazo externo".</div>
           <div class="axuda-nota">Botón <strong>⧉ Duplicar esta sesión</strong>: crea unha fila nova cos mesmos datos da orixinal (horario, relator/a, recursos e café), útil cando só cambia a data.</div>
           <div class="axuda-nota">Enlace <strong>"+ outro recurso"</strong>: para os casos pouco habituais nos que unha sesión precisa dous recursos á vez (por exemplo, kit de radio e un carro de portátiles).</div>
@@ -1856,6 +1859,84 @@ function actualizarTipoActividade() {
   }
 }
 
+// ------------------------------------------------------------
+// ESTILO DOS TEXTOS (título e relatores/as)
+// ------------------------------------------------------------
+const PARTICULAS_NOME = ['de','da','do','dos','das','del','la','las','los','y','e','van','von'];
+
+// Título: minúscula agás a primeira letra. Conserva siglas (palabras xa en maiúsculas de 2 a 6 letras),
+// palabras con números e numerais romanos soltos (I, V, X). Os títulos do catálogo non se tocan.
+// Se o título está todo en maiúsculas non se poden distinguir as siglas: pásase todo a minúscula.
+function normalizarTituloActividade(txt) {
+  const t = String(txt || '').replace(/\s+/g, ' ').trim();
+  if (!t) return t;
+  if (CATALOGO.some(c => c.titulo === t)) return t;
+  const todoMaius = t === t.toLocaleUpperCase('gl') && /\p{L}/u.test(t);
+  let primeira = true;
+  return t.replace(/[\p{L}\p{N}]+/gu, w => {
+    let r;
+    if (/\d/.test(w)) r = w;
+    else if (!todoMaius && w.length >= 2 && w.length <= 6 && w === w.toLocaleUpperCase('gl')) r = w;
+    else if (!todoMaius && /^[IVX]$/.test(w)) r = w;
+    else r = w.toLocaleLowerCase('gl');
+    if (primeira) { r = r.charAt(0).toLocaleUpperCase('gl') + r.slice(1); primeira = false; }
+    return r;
+  });
+}
+
+// Relatores/as (separados por ";"): cada palabra con maiúscula inicial e o resto en minúscula;
+// partículas (de, da, do, dos, das, del, la, las, los, y, e) en minúscula salvo ao principio.
+function normalizarNomeRelator(txt) {
+  return String(txt || '').split(';').map(n => {
+    const limpo = n.replace(/\s+/g, ' ').trim();
+    if (!limpo) return '';
+    return limpo.split(' ').map((p, i) => {
+      const baixa = p.toLocaleLowerCase('gl');
+      if (i > 0 && PARTICULAS_NOME.includes(baixa)) return baixa;
+      return baixa.replace(/(^|[-'’.])(\p{L})/gu, (m, pre, l) => pre + l.toLocaleUpperCase('gl'));
+    }).join(' ');
+  }).filter(Boolean).join('; ');
+}
+
+// Nome con menos de 3 palabras (sen contar partículas): só aviso, non bloquea
+function avisoNomeRelator(txt) {
+  return String(txt || '').split(';').map(n => n.trim()).filter(Boolean)
+    .filter(n => n.split(/\s+/).filter(p => !PARTICULAS_NOME.includes(p.toLocaleLowerCase('gl'))).length < 3);
+}
+
+// Aplica o estilo aos campos do formulario e ás sesións (obxectos de lerSesions). Devolve {cambios, avisos}.
+function aplicarEstiloReserva(tipo, sesions) {
+  const cambios = [], avisos = [];
+  const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const tEl = document.getElementById('res-titulo');
+  if (tEl) {
+    const antes = tEl.value, novo = normalizarTituloActividade(antes);
+    if (novo !== antes) tEl.value = novo;
+    if (novo !== antes.replace(/\s+/g, ' ').trim()) cambios.push(`Título: «${esc(antes.trim())}» → «${esc(novo)}»`);
+  }
+  if (tipo !== 'Cesión de espazo a terceiros') { // alí o campo pode ser unha entidade, non unha persoa
+    const rEl = document.getElementById('res-relator');
+    if (rEl && rEl.value) {
+      const antes = rEl.value, novo = normalizarNomeRelator(antes);
+      if (novo !== antes) rEl.value = novo;
+      if (novo !== antes.replace(/\s+/g, ' ').trim()) cambios.push(`Relator/a: «${esc(antes.trim())}» → «${esc(novo)}»`);
+      avisoNomeRelator(novo).forEach(n => avisos.push(`Relator/a «${esc(n)}»: indica nome e dous apelidos.`));
+    }
+    (sesions || []).forEach((s, i) => {
+      if (!s.relator) return;
+      const antes = s.relator, novo = normalizarNomeRelator(antes);
+      if (novo !== antes) {
+        s.relator = novo;
+        const el = document.getElementById(`ses-relator-${s.filaId}`);
+        if (el) el.value = novo;
+      }
+      if (novo !== antes.replace(/\s+/g, ' ').trim()) cambios.push(`Sesión ${i+1}, relator/a: «${esc(antes.trim())}» → «${esc(novo)}»`);
+      avisoNomeRelator(novo).forEach(n => avisos.push(`Sesión ${i+1}, relator/a «${esc(n)}»: indica nome e dous apelidos.`));
+    });
+  }
+  return { cambios, avisos };
+}
+
 function seleccionarCatalogo() {
   const val = document.getElementById('res-catalogo').value;
   if (!val) return;
@@ -2157,11 +2238,14 @@ function previsualizar() {
 
   const recursos = [...document.querySelectorAll('#recursos-lista input:checked')].map(i => i.value);
   const codigo = document.getElementById('res-codigo').value;
-  const titulo = document.getElementById('res-titulo').value;
-  const relator = document.getElementById('res-relator')?.value || '';
+  let titulo = document.getElementById('res-titulo').value;
+  let relator = document.getElementById('res-relator')?.value || '';
   const obs = calcularObservacionsFinais();
   if (obs === null) return;
   const sesions = esMultisesion ? lerSesions() : [];
+  const estilo = aplicarEstiloReserva(tipo, sesions);
+  titulo = document.getElementById('res-titulo').value;
+  relator = document.getElementById('res-relator')?.value || '';
 
   if (esMultisesion && sesions.length === 0) {
     alert('Engade polo menos unha sesión antes de previsualizar.');
@@ -2197,6 +2281,12 @@ function previsualizar() {
       return `<li>${c.espazo} — ${cy}/${cm}/${ca} ${c.horaSesion} solapa cunha reserva ${c.estado.toLowerCase()} (${c.tipo}, ${c.asesora || '?'}) ${c.horaExistente}</li>`;
     }).join('');
     resumoHTML += `<div class="resumo-conflito"><strong>⚠️ Posible conflito de espazo (${conflitos.length})</strong><ul>${itensConflito}</ul>Revisa antes de confirmar: pode que outra persoa xa teña ese espazo reservado nesa data e hora.</div>`;
+  }
+  if (estilo.cambios.length || estilo.avisos.length) {
+    resumoHTML += `<div class="resumo-estilo">`
+      + (estilo.cambios.length ? `<strong>✏️ Corrixín o formato do texto (só a primeira letra en maiúscula; nomes con maiúscula inicial)</strong><ul>${estilo.cambios.map(c => `<li>${c}</li>`).join('')}</ul>Se algo non está ben (por exemplo, unha sigla ou un nome propio), edita o campo e volve previsualizar.` : '')
+      + (estilo.avisos.length ? `<div style="margin-top:${estilo.cambios.length ? 8 : 0}px"><strong>⚠️ Revisa os nomes</strong><ul>${estilo.avisos.map(c => `<li>${c}</li>`).join('')}</ul></div>` : '')
+      + `</div>`;
   }
   resumoHTML += `
     <div class="resumo-fila"><strong>Persoa:</strong><span>${usuarioActual}</span></div>
@@ -2262,8 +2352,8 @@ async function enviarReserva() {
   const mob = document.querySelector('input[name="mobilidade"]:checked')?.value;
   const recursos = [...document.querySelectorAll('#recursos-lista input:checked')].map(i => i.value);
   const codigo = document.getElementById('res-codigo').value;
-  const titulo = document.getElementById('res-titulo').value;
-  const relator = document.getElementById('res-relator')?.value || '';
+  let titulo = document.getElementById('res-titulo').value;
+  let relator = document.getElementById('res-relator')?.value || '';
   const obs = calcularObservacionsFinais();
   if (obs === null) {
     btnEnviar.disabled = false;
@@ -2273,6 +2363,9 @@ async function enviarReserva() {
   const tiposMultisesion = ['AFI', 'Formación PFPP', 'Cesión de espazo a terceiros'];
   const esMultisesion = tiposMultisesion.includes(tipo);
   const sesions = esMultisesion ? lerSesions() : [];
+  const estilo = aplicarEstiloReserva(tipo, sesions);
+  titulo = document.getElementById('res-titulo').value;
+  relator = document.getElementById('res-relator')?.value || '';
 
   if (esMultisesion && sesions.length === 0) {
     alert('Engade polo menos unha sesión antes de enviar.');
