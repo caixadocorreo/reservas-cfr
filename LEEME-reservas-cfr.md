@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (estilo automático de títulos e relatores/as)*
+*Última actualización: 25/10/2026 (recadro en branco para anotar cafés no planning de limpeza)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -140,6 +140,8 @@ Calcúlase no navegador a partir das reservas `Aprobada`, sen "Espazo externo". 
 | Venres e sábado | Reducida (08:30–12:30) | Mantemento xeral a última hora (baños, papeleiras, o máis groso), cos espazos usados ese venres e os do sábado |
 
 Cando o venres leva mantemento de tarde, os espazos usados ese venres consíderanse limpos o luns, salvo que tamén se usasen o sábado.
+
+**Recadro para anotar a man (só ao imprimir):** cada día leva ao final unha sección **"Aulas con café o día anterior (anotar a man)"** con 3 filas en branco (Aula e Observacións), para apuntar as aulas libres onde se serviu café sen reserva e hai que limpalas. O luns refírese ao venres e ao sábado. Non aparece na pantalla nin os sábados e domingos.
 
 **Límites:** non hai número de asistentes nin estado real de limpeza; o planning supón que cada espazo se limpa cando toca. Cambia se despois se aproban ou cancelan reservas. Non coñece festivos nin días sen persoal.
 

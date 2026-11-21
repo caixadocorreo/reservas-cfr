@@ -922,6 +922,7 @@
   .limp-taboa td { padding:4px 6px;border-bottom:1px solid #eee;vertical-align:top; }
   .limp-aviso-curto { color:#b71c1c;font-weight:600; }
   .limp-buido { color:#777;font-size:13px;margin:4px 0; }
+  .limp-manual { display:none; } /* só se imprime: para anotar a man */
 
   /* Modo consulta (ligazón ?consulta): só lectura */
   body.modo-consulta .nav-tab[data-solo-normal],
@@ -957,6 +958,10 @@
     .multi-mes-grid.tres { grid-template-columns: repeat(3, 1fr); }
     #informe-controis-card, #calefaccion-card, #limpeza-controis-card { display: none !important; }
     .limp-dia { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+    .limp-dia-cab { background: none !important; color: #007bc4 !important; border-bottom: 2px solid #007bc4; }
+    .limp-manual { display: block; margin-top: 12px; }
+    .limp-manual .limp-taboa td { height: 28px; border: 1px solid #999; }
+    .limp-manual .limp-taboa th { border: 1px solid #999; background: #f3f3f3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .informe-tarxeta, .informe-bloque { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
     .informe-barra-encher { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     @page { margin: 1.5cm; size: A4 landscape; }
@@ -1500,7 +1505,7 @@
             <li>O luns a "xornada anterior" son o venres e o sábado. Os espazos ordénanse por andar.</li>
             <li><strong>Venres con actividade o sábado e o venres:</strong> mañá reducida (08:30–12:30) e mantemento xeral a última hora da tarde, cos espazos usados ese venres e os do sábado. <strong>Só sábado:</strong> o venres pola mañá déixanse preparados os espazos do sábado. <strong>Só venres:</strong> venres normal.</li>
           </ul>
-          <p>O botón <strong>🖨️ Descargar PDF</strong> imprime o día ou a semana seleccionados.</p>
+          <p>O botón <strong>🖨️ Descargar PDF</strong> imprime o día ou a semana seleccionados. Ao imprimir, cada día leva ao final un recadro en branco, <strong>"Aulas con café o día anterior"</strong>, con 3 filas (aula e observacións) para anotar a man as aulas libres onde se serviu café sen reserva e hai que limpalas. Na pantalla non se mostra.</p>
           <div class="axuda-nota">Os espazos sen uso na xornada anterior non aparecen. O planning cambia se despois se aproban ou cancelan reservas.</div>
         </div>
       </div>
@@ -2940,6 +2945,8 @@ function renderPlanLimpeza(plan) {
     corpo += `<div class="limp-aviso">Mantemento xeral: baños, papeleiras e limpeza máis groso.</div>`;
     corpo += taboaPorAndar(plan.tarde, ['Espazo','Motivo'], it => `<tr><td><strong>${escLimp(it.espazo)}</strong></td><td>${it.motivos.map(escLimp).join('<br>')}</td></tr>`);
   }
+  corpo += `<div class="limp-manual"><div class="limp-sec">Aulas con café o día anterior (anotar a man)</div>
+    <table class="limp-taboa"><tr><th style="width:35%">Aula</th><th>Observacións</th></tr>${'<tr><td></td><td></td></tr>'.repeat(3)}</table></div>`;
   return `<div class="limp-dia"><div class="limp-dia-cab">${tit}</div><div class="limp-dia-corpo">${corpo}</div></div>`;
 }
 
