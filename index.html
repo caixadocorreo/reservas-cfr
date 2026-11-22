@@ -1534,6 +1534,7 @@
           <p>Se en <strong>⚙️ Axustes</strong> indicas unha ou varias <strong>persoas convidadas</strong> (e, recomendado, o <strong>correo da organizadora</strong>, que é o da conta onde importas), o ficheiro inclúe os convites. Algúns calendarios (Nextcloud, Google) poden enviar un correo ao importar; non está garantido, comprobao cunha proba. Os axustes gárdanse só neste navegador.</p>
           <p>Os eventos das 20:00 inclúen tamén, se procede, os espazos que hai que <strong>apagar ese mesmo día</strong>: os usados ese día que ao día seguinte non teñen actividade (compárase por espazo, co calendario completo). Un sábado apágase sempre; un venres, o que non se use o sábado; un xoves, o que non se use o venres. Se hai que acender e apagar o mesmo día, é un só evento con dúas listas. Se non hai nada que facer, non hai evento.</p>
           <p>Ademais, <strong>todos os xoves ás 10:00</strong> hai un evento propio <strong>"📋 Exportar semana para Sesións"</strong> que lembra exportar a semana seguinte (luns a sábado). Indica cantas reservas Aprobadas de formación hai nesa semana no momento de xerar o ficheiro, ou avisa de que non hai ningunha.</p>
+          <p>Cada liña da descrición é <strong>unha reserva</strong>: aulas separadas por coma, horario, iniciais da persoa asesora e código da actividade (ou o tipo de actividade se non ten código). Por exemplo: <span class="axuda-tag">• Aula 1, Aula 2 (16:30–19:30) · AMG · V2601001</span>. As listas de apagar mostran tamén a actividade que usou esa aula ese día. O ANPA só aparece como "ANPA".</p>
           <p><strong>ANPA</strong>: as datas nas que o alumnado do centro de primaria usa o espazo ANPA (só para acender e apagar a calefacción) lense da folla <span class="axuda-tag">ANPA</span> do Google Sheet, con columnas <em>Desde, Ata, Días, Excepcións</em> (días: Lun, Mar, Mér, Xov, Ven). Contan coma un espazo máis nos avisos, sen horario. Se a folla ten erros, a exportación avisa e non xera ficheiro.</p>
           <p>Cada recordatorio dura 30 minutos e avisa ao comezo. Por defecto cóbrense as <strong>próximas 2 semanas</strong>; pódese elixir outro período.</p>
           <div class="axuda-nota">Ao volver importar o ficheiro actualízanse os eventos do mesmo día sen duplicalos. Pero se unha reserva se cancela ou se rexeita, o evento <strong>non se elimina</strong> do calendario: hai que borralo a man. Convén volver exportar despois de aprobar reservas novas.</div>
@@ -3369,22 +3370,40 @@ function icsSumarDias(str, n) { const d = icsData(str); d.setDate(d.getDate()+n)
 // - Xoves (10:00): espazos de venres/sábado (calefacción e alarma)
 function calcularEntradasCalefaccion(desde, ata, datasAnpa) {
   const DIAS = ['domingo','luns','martes','mércores','xoves','venres','sábado'];
-  const porDia = {}; // data -> { espazo -> [horarios] } con TODAS as reservas Aprobadas (para comparar co día seguinte)
+  const porDia = {};    // data -> { espazo -> [] } con TODAS as reservas Aprobada (para comparar co día seguinte)
+  const gruposDia = {}; // data -> { clave -> {espazos:Set, ini, fin, asesora, etiqueta} }: unha entrada por reserva
   reservas.forEach(r => {
     if (r.estado !== 'Aprobada' || !r.data) return;
-    (r.espazos || '').split(';').map(e => e.trim()).filter(e => e && e !== 'Espazo externo').forEach(e => {
+    const espz = (r.espazos || '').split(';').map(e => e.trim()).filter(e => e && e !== 'Espazo externo');
+    if (!espz.length) return;
+    const clave = [r.asesora, r.horaInicio, r.horaFin, r.codigo, r.titulo, r.tipo].join('|');
+    gruposDia[r.data] = gruposDia[r.data] || {};
+    const g = gruposDia[r.data][clave] = gruposDia[r.data][clave] ||
+      { espazos: new Set(), ini: r.horaInicio || '', fin: r.horaFin || '', asesora: r.asesora || '', etiqueta: r.codigo || r.tipo || '' };
+    espz.forEach(e => {
+      g.espazos.add(e);
       porDia[r.data] = porDia[r.data] || {};
       porDia[r.data][e] = porDia[r.data][e] || [];
-      if (r.horaInicio) porDia[r.data][e].push(`${r.horaInicio}–${r.horaFin}`);
     });
   });
-  (datasAnpa || []).forEach(d => { // ANPA: espazo só de calefacción, sen horario
+  (datasAnpa || []).forEach(d => { // ANPA: espazo só de calefacción, sen horario, persoa nin código
     porDia[d] = porDia[d] || {};
     if (!porDia[d]['ANPA']) porDia[d]['ANPA'] = [];
+    gruposDia[d] = gruposDia[d] || {};
+    gruposDia[d]['ANPA'] = { espazos: new Set(['ANPA']), ini: '', fin: '', asesora: '', etiqueta: '' };
   });
   const ordenar = (a,b) => a.localeCompare(b,'gl',{numeric:true});
   const espazosDe = (data) => Object.keys(porDia[data] || {}).sort(ordenar);
-  const lista = (data, nomes) => nomes.map(e => `• ${e}` + (porDia[data][e].length ? ` (${porDia[data][e].slice().sort().join(', ')})` : '')).join('\n');
+  // Unha liña por reserva: aulas separadas por coma · iniciais · código (ou tipo de actividade)
+  const lista = (data, nomes) => {
+    const sel = nomes ? new Set(nomes) : null;
+    return Object.values(gruposDia[data] || {})
+      .map(g => ({ g, esp: Array.from(g.espazos).filter(e => !sel || sel.has(e)).sort(ordenar) }))
+      .filter(x => x.esp.length)
+      .sort((a, b) => ((horaAMinutos(a.g.ini) ?? 99999) - (horaAMinutos(b.g.ini) ?? 99999)) || ordenar(a.esp[0], b.esp[0]))
+      .map(({ g, esp }) => `• ${esp.join(', ')}` + (g.ini ? ` (${g.ini}–${g.fin})` : '') + (g.asesora ? ` · ${g.asesora}` : '') + (g.etiqueta ? ` · ${g.etiqueta}` : ''))
+      .join('\n');
+  };
   const fmtCurto = (data) => { const [a,m,d] = data.split('-'); return `${d}/${m}`; };
   const dowDe = (data) => icsData(data).getDay();
   const enRango = (data) => data >= desde && data <= ata;
