@@ -1,6 +1,6 @@
 # Sistema de reserva de espazos · CFR de Vigo — Guía de uso
 
-*Última actualización: 25/10/2026 (.ics: iniciais e código/tipo de actividade, aulas agrupadas por reserva)*
+*Última actualización: 25/10/2026 (ligazón da folla ANPA fixada no código)*
 
 Aplicación web para que o persoal asesor solicite reservas de aulas e recursos do centro, con calendario de ocupación en tempo real, exportación para a cartelería TV e descarga en PDF. Publicada en GitHub Pages e conectada a un Google Sheet como base de datos.
 
@@ -362,7 +362,7 @@ Serve **só** para os recordatorios de calefacción do `.ics`. O ANPA é un espa
    - O primeiro: elixe **só a folla `ANPA`** (non "Documento completo").
    - O segundo vén por defecto en "Páxina web": cámbiao a **"Valores separados por comas (.csv)"**. Se se deixa en "Páxina web", a app recibe HTML e dá erro (a mensaxe di que a ligazón devolve unha páxina web).
    - Preme Publicar e copia a ligazón, que debe rematar en `output=csv`. Pode ser un documento propio aparte, con ligazón propia.
-3. En `index.html`, substitúe o valor de `CSV_ANPA_URL` (`PENDENTE_URL_ANPA`) pola ligazón e sube o ficheiro a GitHub.
+3. En `index.html`, substitúe o valor de `CSV_ANPA_URL` (`PENDENTE_URL_ANPA`) pola ligazón e sube o ficheiro a GitHub. A ligazón da folla ANPA xa vén **posta de fábrica** nas versións entregadas desde 26/11/2026; só hai que cambiala se se republica a folla con outra ligazón. Se ao subir un `index.html` o ANPA deixa de aparecer no `.ics` (falta a liña "ANPA: N data(s) lida(s)" debaixo da lista), comproba que `CSV_ANPA_URL` non volveu a `PENDENTE_URL_ANPA`.
 4. Mentres a constante siga en `PENDENTE_URL_ANPA`, o `.ics` xérase sen ANPA.
 
 ### Folla `Config`
